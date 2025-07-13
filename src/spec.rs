@@ -1,14 +1,34 @@
 /// Core types to define a DY specification, that is the description of the structure of a file to parse
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Debug};
 
 /// The specification of a key
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq)]
 pub struct KeySpec<'a> {
     /// The id of the key, its string representation, like "exo", "course", "code", ...
     pub id: &'a str,
     /// The list of keys that can be defined under this keyspec that are children of the current key
     /// and that cannot be used without this parent key
     pub subkeys: &'a DYSpec<'a>,
+    /// The type of this key, impacting the way
+    pub kt: KeyType,
+}
+
+impl<'a> Debug for KeySpec<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "KeySpec with id '{}'", self.id)
+    }
+}
+
+impl<'a> KeySpec<'a> {
+    pub fn is_entity(&self) -> bool {
+        !self.subkeys.is_empty()
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub enum KeyType {
+    SingleLine,
+    Multiline,
 }
 
 /// The specification is just a list of keys that are valid at the current level
@@ -18,6 +38,13 @@ pub type DYSpec<'a> = [&'a KeySpec<'a>];
 #[derive(Debug, Eq, PartialEq)]
 pub struct ValidDYSpec<'a>(&'a DYSpec<'a>);
 
+/// Extract a flat vector of key specs to tokenize lines
+pub fn all_valid_keys<'a>(spec: &'a DYSpec<'a>) -> Vec<&'a KeySpec<'a>> {
+    let mut all_keys = spec.to_vec();
+    all_keys.extend(spec.iter().flat_map(|k| all_valid_keys(k.subkeys)));
+    all_keys
+}
+
 impl<'a> ValidDYSpec<'a> {
     pub fn new(spec: &'a DYSpec) -> Result<Self, String> {
         let mut keys: HashSet<&str> = HashSet::new();
@@ -26,6 +53,10 @@ impl<'a> ValidDYSpec<'a> {
         }
         Self::spec_does_not_contain_known_keys(&mut keys, spec)?;
         Ok(ValidDYSpec(spec))
+    }
+
+    pub fn get(&'a self) -> &'a DYSpec<'a> {
+        self.0
     }
 
     fn spec_does_not_contain_known_keys(
@@ -79,6 +110,7 @@ mod tests {
             &KeySpec {
                 id: "course",
                 subkeys: &[CODE_SPEC, GOAL_SPEC],
+                kt: KeyType::SingleLine
             }
         ])
         .unwrap_err()
