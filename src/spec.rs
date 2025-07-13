@@ -49,22 +49,8 @@ impl<'a> ValidDYSpec<'a> {
 
 #[cfg(test)]
 mod tests {
-    const GOAL_SPEC: &KeySpec = &KeySpec {
-        id: "goal",
-        subkeys: &[],
-    };
-    const CODE_SPEC: &KeySpec = &KeySpec {
-        id: "code",
-        subkeys: &[],
-    };
-    const COURSE_SPEC: &KeySpec = &KeySpec {
-        id: "course",
-        subkeys: &[CODE_SPEC, GOAL_SPEC],
-    };
-
-    const PLX_COURSE_SPEC: &DYSpec = &[COURSE_SPEC];
-
-    use super::{DYSpec, KeySpec, ValidDYSpec};
+    use crate::common::tests::{CODE_SPEC, GOAL_SPEC, PLX_COURSE_SPEC};
+    use crate::spec::{KeySpec, KeyType, ValidDYSpec};
 
     #[test]
     fn test_can_validate_valid_spec() {
