@@ -6,3 +6,7 @@ edition = "2021"
 license-file = "LICENSE"
 
 [dependencies]
+
+[dev-dependencies]
+ntest = "0.9.3"
+pretty_assertions = "1.4.1"
