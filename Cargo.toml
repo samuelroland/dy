@@ -1,0 +1,8 @@
+[package]
+name = "dy"
+description = "Quickly generate a delightful, light, and human readable/writable syntax"
+version = "0.0.1"
+edition = "2021"
+license-file = "LICENSE"
+
+[dependencies]
