@@ -1,12 +1,11 @@
+/// The parser is responsible of the syntax analysis by cutting the content into lines, and lines into parts
+use crate::spec::{all_valid_keys, KeySpec, ValidDYSpec};
 use std::collections::HashMap;
 
-/// The parser engine is responsible to parse a given piece of text, with a given spec
-use crate::spec::{all_valid_keys, KeySpec, ValidDYSpec};
-
-const COMMENT_PREFIX: &str = "//";
+pub const COMMENT_PREFIX: &str = "//";
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-enum LineType<'a> {
+pub enum LineType<'a> {
     /// A line with a valid key at the start. The key can only be valid if it is in the spec and it is in the right level
     WithKey(&'a KeySpec<'a>),
     /// Just a comment outside of a valid code block, it will be completely ignored then
@@ -16,16 +15,37 @@ enum LineType<'a> {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-struct Line<'a> {
-    index: usize,
-    slice: &'a str,
-    lt: LineType<'a>,
+pub struct Line<'a> {
+    pub(crate) index: usize,
+    pub(crate) slice: &'a str,
+    pub(crate) lt: LineType<'a>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+/// A line part is a key, or any other value (after a key or not)
+pub enum LinePart<'a> {
+    Key(&'a str),
+    Value(&'a str),
+}
+
+impl<'a> Line<'a> {
+    pub fn tokenize_parts(&self) -> Vec<LinePart<'a>> {
+        match self.lt {
+            LineType::WithKey(key_spec) => {
+                vec![
+                    LinePart::Key(&self.slice[..key_spec.id.len()]),
+                    LinePart::Value(self.slice[key_spec.id.len()..].trim()),
+                ]
+            }
+            _ => vec![LinePart::Value(self.slice)],
+        }
+    }
 }
 
 /// Take all the lines of `content`, take a flat list of all valid keys in `spec`
 /// and categorize lines between comments, starting with a key and put all the others in the `unknown` category.
 /// A WithKey Line is not verified to be at a valid position !
-fn tokenize_into_lines<'a>(spec: &'a ValidDYSpec, content: &'a str) -> Vec<Line<'a>> {
+pub(crate) fn tokenize_into_lines<'a>(spec: &'a ValidDYSpec, content: &'a str) -> Vec<Line<'a>> {
     let mut lines = Vec::new();
 
     let all_keys = all_valid_keys(spec.get());
@@ -89,10 +109,42 @@ fn line_starts_with_key(line: &str, prefix: &str) -> bool {
 mod tests {
     use crate::{
         common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, PLX_COURSE_SPEC},
-        parser::{line_starts_with_key, tokenize_into_lines, Line, LineType},
+        parser::{line_starts_with_key, tokenize_into_lines, Line, LinePart, LineType},
         spec::ValidDYSpec,
     };
     use pretty_assertions::assert_eq;
+
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_line_into_parts() {
+        assert_eq!(
+            Line {
+                index: 0,
+                slice: "course AB C D",
+                lt: LineType::WithKey(COURSE_SPEC)
+            }
+            .tokenize_parts(),
+            vec![LinePart::Key("course"), LinePart::Value("AB C D")]
+        );
+        assert_eq!(
+            Line {
+                index: 0,
+                slice: "// something here",
+                lt: LineType::Comment
+            }
+            .tokenize_parts(),
+            vec![LinePart::Value("// something here")]
+        );
+        assert_eq!(
+            Line {
+                index: 0,
+                slice: "something here",
+                lt: LineType::Unknown
+            }
+            .tokenize_parts(),
+            vec![LinePart::Value("something here")]
+        );
+    }
 
     #[test]
     #[ntest::timeout(50)]
