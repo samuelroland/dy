@@ -80,14 +80,14 @@ impl<'a> ValidDYSpec<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::tests::{CODE_SPEC, GOAL_SPEC, PLX_COURSE_SPEC};
+    use crate::common::tests::{CODE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC};
     use crate::spec::{KeySpec, KeyType, ValidDYSpec};
 
     #[test]
     fn test_can_validate_valid_spec() {
         assert_eq!(
-            ValidDYSpec::new(PLX_COURSE_SPEC),
-            Ok(ValidDYSpec(PLX_COURSE_SPEC))
+            ValidDYSpec::new(TESTING_COURSE_SPEC),
+            Ok(ValidDYSpec(TESTING_COURSE_SPEC))
         );
     }
 

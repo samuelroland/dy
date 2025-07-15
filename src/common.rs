@@ -18,5 +18,17 @@ pub mod tests {
         subkeys: &[CODE_SPEC, GOAL_SPEC],
         kt: KeyType::SingleLine,
     };
-    pub const PLX_COURSE_SPEC: &DYSpec = &[COURSE_SPEC];
+    pub const TESTING_COURSE_SPEC: &DYSpec = &[COURSE_SPEC];
+
+    pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
+        id: "subskill",
+        subkeys: &[],
+        kt: KeyType::Multiline,
+    };
+    pub const SKILL_SPEC: &KeySpec = &KeySpec {
+        id: "skill",
+        subkeys: &[SUBSKILL_SPEC],
+        kt: KeyType::Multiline,
+    };
+    pub const TESTING_SKILLS_SPEC: &DYSpec = &[SKILL_SPEC];
 }

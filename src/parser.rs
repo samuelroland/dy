@@ -108,7 +108,7 @@ fn line_starts_with_key(line: &str, prefix: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::{
-        common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, PLX_COURSE_SPEC},
+        common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC},
         parser::{line_starts_with_key, tokenize_into_lines, Line, LinePart, LineType},
         spec::ValidDYSpec,
     };
@@ -165,7 +165,7 @@ mod tests {
 code PRG1
 goal Apprendre des bases solides du C++";
         assert_eq!(
-            tokenize_into_lines(&ValidDYSpec::new(PLX_COURSE_SPEC).unwrap(), text),
+            tokenize_into_lines(&ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap(), text),
             vec![
                 Line {
                     index: 0,
@@ -198,7 +198,7 @@ goal Apprendre des bases solides du C++
 // yet another one
 ";
         assert_eq!(
-            tokenize_into_lines(&ValidDYSpec::new(PLX_COURSE_SPEC).unwrap(), text),
+            tokenize_into_lines(&ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap(), text),
             vec![
                 Line {
                     index: 0,
@@ -248,7 +248,7 @@ codehey
 goalApprendre slaut
 
 blabla";
-        let binding = ValidDYSpec::new(PLX_COURSE_SPEC).unwrap();
+        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
         let lines = tokenize_into_lines(&binding, text);
         assert_eq!(lines.len(), 5);
         dbg!(&lines);
