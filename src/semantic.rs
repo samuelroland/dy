@@ -410,4 +410,35 @@ course oups";
             }]
         );
     }
+
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_can_build_blocks_with_multiline_keys_ignoring_comments() {
+        let text = "// amazing file
+// just ignored
+skill A
+// yop
+A desc
+// yop in middle
+A desc 2
+subskill AA
+skill B
+// just ignored
+B desc
+// just ignored
+subskill C
+// just ignored
+// just ignored
+// just ignored
+C desc
+C desc 2
+// just ignored
+// just ignored
+// just ignored
+";
+        let binding = ValidDYSpec::new(TESTING_SKILLS_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(blocks, vec![]);
+        assert_eq!(errors, vec![]);
+    }
 }
