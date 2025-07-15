@@ -11,11 +11,19 @@ pub struct KeySpec<'a> {
     pub subkeys: &'a DYSpec<'a>,
     /// The type of this key, impacting the way
     pub kt: KeyType,
+
+    /// Whether this key is only permitted once for its parent object
+    ///
+    /// For example, in PLX the `course` key is only acceptable once in a `course.dy` file as we only want
+    /// to define a single course. For a skill, the `dir` key is only meaningful when given
+    /// once. For a check, the `type` key is totally okay since we want to type different things
+    /// as the sequence of the check.
+    pub once: bool,
 }
 
 impl<'a> Debug for KeySpec<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "KeySpec with id '{}'", self.id)
+        write!(f, "KeySpec '{}'", self.id)
     }
 }
 
@@ -110,7 +118,8 @@ mod tests {
             &KeySpec {
                 id: "course",
                 subkeys: &[CODE_SPEC, GOAL_SPEC],
-                kt: KeyType::SingleLine
+                kt: KeyType::SingleLine,
+                once: true,
             }
         ])
         .unwrap_err()
