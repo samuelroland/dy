@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::iter::Peekable;
 
@@ -129,7 +130,8 @@ fn build_blocks_subtree_recursive<'a>(
     let mut errors: Vec<ParseError> = Vec::new();
     let mut blocks: Vec<Block> = Vec::new();
 
-    // let mut current_new_block: Option<Block> = None;
+    // TODO: change this to a normal vec with an index access, to improve performance
+    let mut once_keys_found: HashSet<&str> = HashSet::new();
 
     while let Some(line) = lines.peek() {
         match line.lt {
@@ -139,6 +141,27 @@ fn build_blocks_subtree_recursive<'a>(
                         "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
                     );
                 if specs.iter().any(|s| s.id == associated_spec.id) {
+                    // Make sure keys with once=true are not inserted more than once !
+                    if associated_spec.once {
+                        let already_inserted = !once_keys_found.insert(associated_spec.id);
+                        if already_inserted {
+                            errors.push(ParseError {
+                                range: range_on_line_with_length(
+                                    line.index as u32,
+                                    associated_spec.id.len() as u32,
+                                ),
+                                some_file: None,
+                                error: ParseErrorType::DuplicatedKey(
+                                    associated_spec.id.to_string(),
+                                    level,
+                                ),
+                            });
+                            lines.next();
+                            break;
+                        }
+                    }
+
+                    // Build the new block as it is valid
                     let parts = line.tokenize_parts();
                     let text = parts
                         .iter()
