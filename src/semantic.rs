@@ -1,14 +1,17 @@
+use std::fmt::Debug;
+use std::iter::Peekable;
+
 /// The semantic analyzer is responsible for building tree of blocks, building and verifying the hierarchy as the lines
 /// starting with a key are found.
 use lsp_types::{Position, Range};
 
 use crate::{
-    error::ParseError,
+    error::{ParseError, ParseErrorType},
     parser::{Line, LinePart, LineType},
     spec::{DYSpec, KeySpec, ValidDYSpec},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 struct Block<'a> {
     key: &'a KeySpec<'a>,
     /// The text contained in the value of this block, when multiline it can contains several &str
@@ -18,6 +21,31 @@ struct Block<'a> {
     range: Range,
     /// The sub blocks
     subblocks: Vec<Block<'a>>,
+}
+
+// Implement Debug so we can have a shorter display of Range
+impl<'a> Debug for Block<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        struct NiceRange<'a>(&'a Range);
+        impl<'a> Debug for NiceRange<'a> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(
+                    f,
+                    "{}:{}-{}:{}",
+                    &self.0.start.line,
+                    &self.0.start.character,
+                    &self.0.end.line,
+                    &self.0.end.character,
+                )
+            }
+        }
+        f.debug_struct("Block")
+            .field("key", &self.key)
+            .field("text", &self.text)
+            .field("range", &NiceRange(&self.range))
+            .field("subblocks", &self.subblocks)
+            .finish()
+    }
 }
 
 /// Given a flat list of Line, build a blocks tree, with a tree's hierarchy respecting the given tree spec. Return possible hierarchy errors.
@@ -88,74 +116,118 @@ fn build_blocks_tree<'a>(
     lines: Vec<Line<'a>>,
     spec: &ValidDYSpec,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
-    let errors: Vec<ParseError> = Vec::new();
+    build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0, None)
+}
+
+/// Recursive function to build a subtree of blocks
+fn build_blocks_subtree_recursive<'a>(
+    lines: &mut Peekable<std::slice::Iter<'_, Line<'a>>>,
+    specs: &DYSpec,
+    level: u8,
+    parent_spec: Option<&KeySpec>,
+) -> (Vec<Block<'a>>, Vec<ParseError>) {
+    let mut errors: Vec<ParseError> = Vec::new();
     let mut blocks: Vec<Block> = Vec::new();
-    let mut current_spec = spec.get();
-    let mut parents_spec: Vec<&DYSpec> = Vec::new();
-    dbg!(&parents_spec);
-    let mut parents_blocks: Vec<Block> = Vec::new();
-    dbg!(&parents_blocks);
-    for line in lines {
+
+    // let mut current_new_block: Option<Block> = None;
+
+    while let Some(line) = lines.peek() {
         match line.lt {
-            LineType::WithKey(key_spec) => {
+            LineType::WithKey(associated_spec) => {
                 // eprintln!("Checking line WithKey: {}", line.slice);
-                loop {
-                    // eprintln!("Checking if {key_spec:?} is present inside {current_spec:?}");
-                    if let Some(found) = current_spec.iter().find(|s| s.id == key_spec.id) {
-                        let parts = line.tokenize_parts();
-                        let text = parts
-                            .iter()
-                            .filter_map(|f| {
-                                if let LinePart::Value(a) = f {
-                                    Some(*a)
-                                } else {
-                                    None
-                                }
+                eprintln!(
+                        "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
+                    );
+                if specs.iter().any(|s| s.id == associated_spec.id) {
+                    let parts = line.tokenize_parts();
+                    let text = parts
+                        .iter()
+                        .filter_map(|f| {
+                            if let LinePart::Value(a) = f {
+                                Some(*a)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    let mut new_block = Block {
+                        key: associated_spec,
+                        text,
+                        range: Range::new(
+                            Position::new(line.index as u32, 0),
+                            Position::new(line.index as u32, line.slice.len() as u32),
+                        ),
+                        subblocks: vec![],
+                    };
+
+                    println!("New block: {new_block:?}");
+
+                    // The line was valid, we can move to the next line
+                    lines.next();
+
+                    // If there are subkeys and the next li
+                    if !associated_spec.subkeys.is_empty()
+                        && matches!(
+                            lines.peek(),
+                            Some(Line {
+                                lt: LineType::WithKey(_),
+                                ..
                             })
-                            .collect();
-                        let new_block = Block {
-                            key: key_spec,
-                            text,
-                            range: Range::new(
-                                Position::new(line.index as u32, 0),
-                                Position::new(line.index as u32, line.slice.len() as u32),
-                            ),
-                            subblocks: vec![],
-                        };
-                        println!("New block: {new_block:?}");
-
-                        if !key_spec.subkeys.is_empty() {
-                            parents_blocks.push(new_block);
-                            dbg!(&parents_blocks);
-                            parents_spec.push(current_spec);
-                            dbg!(&parents_spec);
-                            current_spec = key_spec.subkeys;
-                        } else if !parents_blocks.is_empty() {
-                            parents_blocks.last_mut().unwrap().subblocks.push(new_block);
-                            dbg!(&parents_blocks);
-                        }
-                        break;
+                        )
+                    {
+                        eprintln!("Recursive call to level {}", level + 1);
+                        let (subblocks, suberrors) = build_blocks_subtree_recursive(
+                            lines,
+                            associated_spec.subkeys,
+                            level + 1,
+                            Some(associated_spec),
+                        );
+                        dbg!(&subblocks, &suberrors);
+                        new_block.subblocks = subblocks;
+                        errors.extend(suberrors);
+                        // if !new_block.subblocks.is_empty() {
+                        //     blocks.push(new_block); // we can save the block at this point
+                        //     current_new_block = None; // no more Unknown lines can be added to block.text after children blocks have been found
+                        //                               // block.
+                        // }
                     } else {
-                        // println!("No found")
+                        // current_new_block = Some(new_block);
                     }
-
-                    // break;
-                    // If we reach this point, the key_spec.id is not a valid key at this level !
-                    // TODO store the error
+                    blocks.push(new_block); // TODO fix
+                } else if level == 0 {
+                    eprintln!("Found WrongKeyPosition !");
+                    errors.push(ParseError {
+                        range: range_on_line_with_length(
+                            line.index as u32,
+                            associated_spec.id.len() as u32,
+                        ),
+                        some_file: None,
+                        error: ParseErrorType::WrongKeyPosition(
+                            associated_spec.id.to_string(),
+                            "??".to_string(), // how to get the parent ??
+                        ),
+                    });
+                    lines.next();
+                } else {
+                    eprintln!("No found at this level, going up");
+                    break;
                 }
+                // break;
+                // If we reach this point, the key_spec.id is not a valid key at this level !
+                // TODO store the error
             }
             LineType::Comment => continue,
             LineType::Unknown => {
-                if let Some(existing_block) = parents_blocks.last_mut() {
-                    existing_block.text.push(line.slice);
-                    existing_block.range.end.line = line.index as u32;
-                } else {
-                    // todo manage errors
-                }
+                // if let Some(existing_block) = parents_blocks.last_mut() {
+                //     existing_block.text.push(line.slice);
+                //     existing_block.range.end.line = line.index as u32;
+                // } else {
+                //     // todo manage errors
+                // }
             }
         }
     }
-    (parents_blocks, vec![])
+    (blocks, errors)
 }
 
 /// Util function to create a new range on a single line, at given line indes, from position 0 to given length
@@ -171,23 +243,33 @@ fn range_on_line_with_length(line: u32, length: u32) -> Range {
 
 #[cfg(test)]
 mod tests {
-    use crate::error::{self, ParseError, ParseErrorType};
+
+    use crate::common::tests::{SKILL_SPEC, SUBSKILL_SPEC, TESTING_SKILLS_SPEC};
+    use crate::error::{ParseError, ParseErrorType};
     use crate::semantic::range_on_line_with_length;
     use crate::{
-        common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, PLX_COURSE_SPEC},
+        common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC},
         parser::tokenize_into_lines,
         semantic::{build_blocks_tree, Block},
         spec::ValidDYSpec,
     };
     use pretty_assertions::assert_eq;
 
+    fn get_blocks<'a>(
+        spec: &'a ValidDYSpec,
+        text: &'a str,
+    ) -> (std::vec::Vec<Block<'a>>, std::vec::Vec<ParseError>) {
+        let lines = tokenize_into_lines(spec, text);
+        build_blocks_tree(lines, spec)
+    }
+
     #[test]
     #[ntest::timeout(50)]
-    fn test_can_build_blocks_for_course() {
+    fn test_can_build_blocks_for_simple_course() {
         let text = "course Programmation 1
 code PRG1
 goal Apprendre des bases solides du C++";
-        let spec = &ValidDYSpec::new(PLX_COURSE_SPEC).unwrap();
+        let spec = &ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
         let lines = tokenize_into_lines(spec, text);
         let (blocks, errors) = build_blocks_tree(lines, spec);
 
@@ -218,19 +300,64 @@ goal Apprendre des bases solides du C++";
 
     #[test]
     #[ntest::timeout(50)]
+    fn test_can_build_blocks_for_complex_skills() {
+        let text = "skill A
+subskill B
+skill C
+skill D
+subskill E";
+        let binding = ValidDYSpec::new(TESTING_SKILLS_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(
+            blocks,
+            vec![
+                Block {
+                    key: SKILL_SPEC,
+                    text: vec!["A",],
+                    range: range_on_line_with_length(0, 7),
+                    subblocks: vec![Block {
+                        key: SUBSKILL_SPEC,
+                        text: vec!["B",],
+                        range: range_on_line_with_length(1, 10),
+                        subblocks: vec![],
+                    },],
+                },
+                Block {
+                    key: SKILL_SPEC,
+                    text: vec!["C",],
+                    range: range_on_line_with_length(2, 7),
+                    subblocks: vec![],
+                },
+                Block {
+                    key: SKILL_SPEC,
+                    text: vec!["D",],
+                    range: range_on_line_with_length(3, 7),
+                    subblocks: vec![Block {
+                        key: SUBSKILL_SPEC,
+                        text: vec!["E",],
+                        range: range_on_line_with_length(4, 10),
+                        subblocks: vec![],
+                    },],
+                }
+            ]
+        );
+        assert_eq!(errors, vec![]);
+    }
+
+    #[test]
+    #[ntest::timeout(50)]
     fn test_can_detect_wrong_key_positions() {
         let text = "goal learn c++
 course Programmation 1
 code hey";
-        let spec = &ValidDYSpec::new(PLX_COURSE_SPEC).unwrap();
-        let lines = tokenize_into_lines(spec, text);
-        let (_, errors) = build_blocks_tree(lines, spec);
+        let (_, errors) = get_blocks(&ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap(), text);
 
         assert_eq!(
             errors,
             vec![ParseError {
-                range: range_on_line_with_length(1, 6),
-                error: ParseErrorType::WrongKeyPosition("goal".to_string(), "course".to_string())
+                range: range_on_line_with_length(0, 4),
+                some_file: None,
+                error: ParseErrorType::WrongKeyPosition("goal".to_string(), "??".to_string()) // "course".to_string())
             }]
         );
     }
@@ -240,10 +367,8 @@ code hey";
     fn test_can_detect_duplicated_key_error() {
         let text = "course Programmation 1
 course oups";
-        let spec = &ValidDYSpec::new(PLX_COURSE_SPEC).unwrap();
-        let lines = tokenize_into_lines(spec, text);
-        let (blocks, errors) = build_blocks_tree(lines, spec);
-
+        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
         assert_eq!(
             blocks,
             vec![Block {
@@ -257,6 +382,7 @@ course oups";
             errors,
             vec![ParseError {
                 range: range_on_line_with_length(1, 6),
+                some_file: None,
                 error: ParseErrorType::DuplicatedKey("course".to_string(), 0)
             }]
         );
