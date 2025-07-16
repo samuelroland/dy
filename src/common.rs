@@ -36,4 +36,42 @@ pub mod tests {
         once: false,
     };
     pub const TESTING_SKILLS_SPEC: &DYSpec = &[SKILL_SPEC];
+
+    pub const ARGS_SPEC: &KeySpec = &KeySpec {
+        id: "args",
+        subkeys: &[],
+        kt: KeyType::SingleLine,
+        once: true,
+    };
+    pub const SEE_SPEC: &KeySpec = &KeySpec {
+        id: "see",
+        subkeys: &[],
+        kt: KeyType::Multiline,
+        once: false,
+    };
+    pub const TYPE_SPEC: &KeySpec = &KeySpec {
+        id: "type",
+        subkeys: &[],
+        kt: KeyType::SingleLine,
+        once: false,
+    };
+    pub const EXIT_SPEC: &KeySpec = &KeySpec {
+        id: "exit",
+        subkeys: &[],
+        kt: KeyType::SingleLine,
+        once: true,
+    };
+    pub const CHECK_SPEC: &KeySpec = &KeySpec {
+        id: "check",
+        subkeys: &[ARGS_SPEC, SEE_SPEC, TYPE_SPEC, EXIT_SPEC],
+        kt: KeyType::SingleLine,
+        once: false,
+    };
+    pub const EXO_SPEC: &KeySpec = &KeySpec {
+        id: "exo",
+        subkeys: &[CHECK_SPEC],
+        kt: KeyType::Multiline,
+        once: false,
+    };
+    pub const TESTING_EXOS_SPEC: &DYSpec = &[EXO_SPEC];
 }

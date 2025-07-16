@@ -217,32 +217,34 @@ fn build_blocks_subtree_recursive<'a>(
                 lines.next();
             }
             LineType::Unknown => {
-                if let Some(existing_block) = blocks.last_mut() {
-                    if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                if !line.slice.trim().is_empty() {
+                    if let Some(existing_block) = blocks.last_mut() {
+                        if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                            errors.push(ParseError {
+                                range: range_on_line_with_length(
+                                    line.index as u32,
+                                    line.slice.len() as u32,
+                                ),
+                                some_file: None,
+                                error: ParseErrorType::InvalidMultilineContent(
+                                    existing_block.key.id.to_string(),
+                                ),
+                            });
+                        } else {
+                            existing_block.text.push(line.slice);
+                            existing_block.range.end.line = line.index as u32;
+                        }
+                    } else {
+                        // non empty lines without an existing block are ContentOutOfKey
                         errors.push(ParseError {
                             range: range_on_line_with_length(
                                 line.index as u32,
                                 line.slice.len() as u32,
                             ),
                             some_file: None,
-                            error: ParseErrorType::InvalidMultilineContent(
-                                existing_block.key.id.to_string(),
-                            ),
+                            error: ParseErrorType::ContentOutOfKey,
                         });
-                    } else {
-                        existing_block.text.push(line.slice);
-                        existing_block.range.end.line = line.index as u32;
                     }
-                } else if !line.slice.trim().is_empty() {
-                    // non empty lines without an existing block are ContentOutOfKey
-                    errors.push(ParseError {
-                        range: range_on_line_with_length(
-                            line.index as u32,
-                            line.slice.len() as u32,
-                        ),
-                        some_file: None,
-                        error: ParseErrorType::ContentOutOfKey,
-                    });
                 }
                 lines.next();
             }
@@ -299,7 +301,10 @@ fn range_on_lines(line: u32, line2: u32, length: u32) -> Range {
 #[cfg(test)]
 mod tests {
 
-    use crate::common::tests::{SKILL_SPEC, SUBSKILL_SPEC, TESTING_SKILLS_SPEC};
+    use crate::common::tests::{
+        ARGS_SPEC, CHECK_SPEC, EXIT_SPEC, EXO_SPEC, SEE_SPEC, SKILL_SPEC, SUBSKILL_SPEC,
+        TESTING_EXOS_SPEC, TESTING_SKILLS_SPEC, TYPE_SPEC,
+    };
     use crate::error::{ParseError, ParseErrorType};
     use crate::semantic::{range_on_line_with_length, range_on_lines};
     use crate::{
@@ -490,7 +495,7 @@ C desc 2
                     range: range_on_lines(8, 10, 7),
                     subblocks: vec![Block {
                         key: SUBSKILL_SPEC,
-                        text: ["C", "C desc", "C desc 2",].to_vec(),
+                        text: vec!["C", "C desc", "C desc 2",],
                         range: range_on_lines(12, 17, 10),
                         subblocks: vec![],
                     },],
@@ -581,6 +586,134 @@ goal Apprendre des bases solides du C++";
                     },
                 ],
             }]
+        );
+    }
+
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_can_extract_complex_exos_blocks() {
+        let text = "// great exo
+exo hey
+a great instruction
+on several lines
+
+check validate it
+args John
+see Hello John
+type Doe
+see Hello John Doe
+exit 0
+
+check error
+args john doe
+see too many arguments
+exit 1
+
+exo
+check error
+see missing argument
+exit 1
+";
+        let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(errors, vec![]);
+        assert_eq!(
+            blocks,
+            vec![
+                Block {
+                    key: EXO_SPEC,
+                    text: vec!["hey", "a great instruction", "on several lines",],
+                    range: range_on_lines(1, 3, 7),
+                    subblocks: vec![
+                        Block {
+                            key: CHECK_SPEC,
+                            text: vec!["validate it",],
+                            range: range_on_line_with_length(5, 17),
+                            subblocks: vec![
+                                Block {
+                                    key: ARGS_SPEC,
+                                    text: vec!["John",],
+                                    range: range_on_line_with_length(6, 9),
+                                    subblocks: vec![],
+                                },
+                                Block {
+                                    key: SEE_SPEC,
+                                    text: vec!["Hello John",],
+                                    range: range_on_line_with_length(7, 14),
+                                    subblocks: vec![],
+                                },
+                                Block {
+                                    key: TYPE_SPEC,
+                                    text: vec!["Doe",],
+                                    range: range_on_line_with_length(8, 8),
+                                    subblocks: vec![],
+                                },
+                                Block {
+                                    key: SEE_SPEC,
+                                    text: vec!["Hello John Doe",],
+                                    range: range_on_line_with_length(9, 18),
+                                    subblocks: vec![],
+                                },
+                                Block {
+                                    key: EXIT_SPEC,
+                                    text: vec!["0",],
+                                    range: range_on_line_with_length(10, 6),
+                                    subblocks: vec![],
+                                },
+                            ],
+                        },
+                        Block {
+                            key: CHECK_SPEC,
+                            text: vec!["error",],
+                            range: range_on_line_with_length(12, 11),
+                            subblocks: vec![
+                                Block {
+                                    key: ARGS_SPEC,
+                                    text: vec!["john doe",],
+                                    range: range_on_line_with_length(13, 13),
+                                    subblocks: vec![],
+                                },
+                                Block {
+                                    key: SEE_SPEC,
+                                    text: vec!["too many arguments",],
+                                    range: range_on_line_with_length(14, 22),
+                                    subblocks: vec![],
+                                },
+                                Block {
+                                    key: EXIT_SPEC,
+                                    text: vec!["1",],
+                                    range: range_on_line_with_length(15, 6),
+                                    subblocks: vec![],
+                                },
+                            ],
+                        },
+                    ],
+                },
+                Block {
+                    key: EXO_SPEC,
+                    text: vec!["",],
+                    range: range_on_line_with_length(17, 3),
+                    subblocks: vec![Block {
+                        key: CHECK_SPEC,
+                        text: vec!["error",],
+                        range: range_on_line_with_length(18, 11),
+                        subblocks: vec![
+                            Block {
+                                key: SEE_SPEC,
+                                text: vec!["missing argument",],
+                                range: range_on_line_with_length(19, 20),
+                                subblocks: vec![],
+                            },
+                            Block {
+                                key: EXIT_SPEC,
+                                text: vec!["1",],
+                                range: range_on_line_with_length(20, 6),
+                                subblocks: vec![],
+                            },
+                        ],
+                    },],
+                },
+            ]
         );
     }
 }
