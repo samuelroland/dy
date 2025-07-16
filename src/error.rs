@@ -16,6 +16,21 @@ pub enum ParseErrorType {
     ContentOutOfKey,
 }
 
+/// Implement ordering to sort errors by range start position.
+/// This makes it easier for testing and also better for console output
+impl Ord for ParseError {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.range.start.line, self.range.start.character)
+            .cmp(&(other.range.start.line, other.range.start.character))
+    }
+}
+
+impl PartialOrd for ParseError {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other)) // just use normal Ord trait
+    }
+}
+
 #[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
 pub struct ParseError {
     pub range: Range,

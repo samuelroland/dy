@@ -117,7 +117,14 @@ fn build_blocks_tree<'a>(
     lines: Vec<Line<'a>>,
     spec: &ValidDYSpec,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
-    build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0, None)
+    let (blocks, mut errors) =
+        build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0, None);
+
+    // TODO: that's useful for future errors generated from entities
+    // is it still useful or are the errors naturally already sorted ?
+    errors.sort();
+
+    (blocks, errors)
 }
 
 /// Recursive function to build a subtree of blocks
@@ -140,53 +147,50 @@ fn build_blocks_subtree_recursive<'a>(
     while let Some(line) = lines.peek() {
         match line.lt {
             LineType::WithKey(associated_spec) => {
-                // eprintln!(
-                //         "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
-                //     );
+                eprintln!(
+                        "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
+                    );
                 if specs.iter().any(|s| s.id == associated_spec.id) {
+                    // eprintln!("Found {}", associated_spec.id);
                     // Make sure keys with once=true are not inserted more than once !
-                    if associated_spec.once {
-                        let already_inserted = !once_keys_found.insert(associated_spec.id);
-                        if already_inserted {
-                            errors.push(ParseError {
-                                range: range_on_line_with_length(
-                                    line.index as u32,
-                                    associated_spec.id.len() as u32,
-                                ),
-                                some_file: None,
-                                error: ParseErrorType::DuplicatedKey(
-                                    associated_spec.id.to_string(),
-                                    level,
-                                ),
-                            });
-                            lines.next();
-                            break;
-                        }
+                    if associated_spec.once && !once_keys_found.insert(associated_spec.id) {
+                        eprintln!("Found DuplicatedKey on line: {}", line.slice);
+                        errors.push(ParseError {
+                            range: range_on_line_with_length(
+                                line.index as u32,
+                                associated_spec.id.len() as u32,
+                            ),
+                            some_file: None,
+                            error: ParseErrorType::DuplicatedKey(
+                                associated_spec.id.to_string(),
+                                level,
+                            ),
+                        });
+                    } else {
+                        // Build the new block as it is valid
+                        let parts = line.tokenize_parts();
+                        let text = parts
+                            .iter()
+                            .filter_map(|f| {
+                                if let LinePart::Value(a) = f {
+                                    Some(*a)
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        let new_block = Block {
+                            key: associated_spec,
+                            text,
+                            range: Range::new(
+                                Position::new(line.index as u32, 0),
+                                Position::new(line.index as u32, line.slice.len() as u32),
+                            ),
+                            subblocks: vec![],
+                        };
+                        eprintln!("New block: {new_block:?}");
+                        blocks.push(new_block); // TODO fix
                     }
-
-                    // Build the new block as it is valid
-                    let parts = line.tokenize_parts();
-                    let text = parts
-                        .iter()
-                        .filter_map(|f| {
-                            if let LinePart::Value(a) = f {
-                                Some(*a)
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    let new_block = Block {
-                        key: associated_spec,
-                        text,
-                        range: Range::new(
-                            Position::new(line.index as u32, 0),
-                            Position::new(line.index as u32, line.slice.len() as u32),
-                        ),
-                        subblocks: vec![],
-                    };
-                    println!("New block: {new_block:?}");
-                    blocks.push(new_block); // TODO fix
 
                     // The line was valid, we can move to the next line
                     lines.next();
@@ -205,6 +209,7 @@ fn build_blocks_subtree_recursive<'a>(
                     });
                     lines.next();
                 } else {
+                    eprintln!("current blocks: {blocks:?}");
                     eprintln!("No found at this level, going up");
                     break;
                 }
@@ -220,6 +225,7 @@ fn build_blocks_subtree_recursive<'a>(
                 if !line.slice.trim().is_empty() {
                     if let Some(existing_block) = blocks.last_mut() {
                         if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                            eprintln!("Found InvalidMultilineContent on line: {}", line.slice);
                             errors.push(ParseError {
                                 range: range_on_line_with_length(
                                     line.index as u32,
@@ -235,6 +241,7 @@ fn build_blocks_subtree_recursive<'a>(
                             existing_block.range.end.line = line.index as u32;
                         }
                     } else {
+                        eprintln!("Found ContentOutOfKey on line: {}", line.slice);
                         // non empty lines without an existing block are ContentOutOfKey
                         errors.push(ParseError {
                             range: range_on_line_with_length(
@@ -591,7 +598,7 @@ goal Apprendre des bases solides du C++";
 
     #[test]
     #[ntest::timeout(50)]
-    fn test_can_extract_complex_exos_blocks() {
+    fn test_can_extract_complex_exos_blocks_with_errors_ignorance() {
         let text = "// great exo
 exo hey
 a great instruction
@@ -606,17 +613,37 @@ exit 0
 
 check error
 args john doe
+args invalid duplicated args !
 see too many arguments
 exit 1
+exit double exit !
 
-exo
-check error
-see missing argument
-exit 1
-";
+// Another one !
+exo duplicated invalid exo !
+// check error with duplicate
+"; // the challenge is to be able to ignore the check here as the exo key was ignored
         let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
         let (blocks, errors) = get_blocks(&binding, text);
-        assert_eq!(errors, vec![]);
+        assert_eq!(
+            errors,
+            vec![
+                ParseError {
+                    range: range_on_line_with_length(14, 4),
+                    some_file: None,
+                    error: ParseErrorType::DuplicatedKey("args".to_string(), 2),
+                },
+                ParseError {
+                    range: range_on_line_with_length(17, 4),
+                    some_file: None,
+                    error: ParseErrorType::DuplicatedKey("exit".to_string(), 2),
+                },
+                ParseError {
+                    range: range_on_line_with_length(20, 3),
+                    some_file: None,
+                    error: ParseErrorType::DuplicatedKey("exo".to_string(), 0),
+                },
+            ]
+        );
         assert_eq!(
             blocks,
             vec![
@@ -676,43 +703,20 @@ exit 1
                                 Block {
                                     key: SEE_SPEC,
                                     text: vec!["too many arguments",],
-                                    range: range_on_line_with_length(14, 22),
+                                    range: range_on_line_with_length(15, 22),
                                     subblocks: vec![],
                                 },
                                 Block {
                                     key: EXIT_SPEC,
                                     text: vec!["1",],
-                                    range: range_on_line_with_length(15, 6),
+                                    range: range_on_line_with_length(16, 6),
                                     subblocks: vec![],
                                 },
                             ],
                         },
                     ],
                 },
-                Block {
-                    key: EXO_SPEC,
-                    text: vec!["",],
-                    range: range_on_line_with_length(17, 3),
-                    subblocks: vec![Block {
-                        key: CHECK_SPEC,
-                        text: vec!["error",],
-                        range: range_on_line_with_length(18, 11),
-                        subblocks: vec![
-                            Block {
-                                key: SEE_SPEC,
-                                text: vec!["missing argument",],
-                                range: range_on_line_with_length(19, 20),
-                                subblocks: vec![],
-                            },
-                            Block {
-                                key: EXIT_SPEC,
-                                text: vec!["1",],
-                                range: range_on_line_with_length(20, 6),
-                                subblocks: vec![],
-                            },
-                        ],
-                    },],
-                },
+                // no exo as a duplicate !
             ]
         );
     }
