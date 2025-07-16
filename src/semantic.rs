@@ -50,69 +50,51 @@ impl<'a> Debug for Block<'a> {
 }
 
 /// Given a flat list of Line, build a blocks tree, with a tree's hierarchy respecting the given tree spec. Return possible hierarchy errors.
-/// This group Unknown content after a multiline prefix in a single block of the associated key
+/// It groups Unknown content after a multiline prefix in a single block for the associated key
 /// On each line WithKey we try to determine whether the key is valid at this position
 ///
-/// Instead of a recursive approach, we use non-recursive algorithm that is going deeper in the spec tree
-/// if the key is valid, and upper in the spec tree otherwise
-///
-/// TODO REFACTOR THIS COMMENT
-/// This is starting at the root spec, we try to find if the found key is part of the spec at root
-/// if yes, we go a lever deeper into the spec of the found key, because there is a higher chance of finding the next key in subkeys for the next line
-/// We continue with the next lines. If we don't find anything in this level, we go in level - 1 if
-/// possible. When we reached the root again, we stop and report the error.
-///
+/// Here is the example of the algo to better understand it before reading the code
 /// EXAMPLE with this spec tree
-/// exo
-/// - check
-///   - args
-///   - see
-///   - type
+/// - exo
+///   - check
+///     - args
+///     - see
+///     - type
 ///
 /// and these exo lines:
 ///
+/// random text
 /// exo hey there
+/// some content
+/// // just a comment
+/// see not good because incorrect level
 /// check yes
+/// args 1
 /// see good
-/// exo yop
-/// see not good
-/// check okay
+/// args duplicated !
+/// type good
+/// check 2
 ///
-/// first line: testing "exo" -> found immediately
-/// second line: testing "check" -> found immediately
-/// third line: testing "args", then "see" -> ok
-/// fourth line: testing "args", "see", "type", level--, testing "check", level--, testing "exo" -> ok
-/// fifth line: testing "check", level--, testing "exo", cannot level-- so report the error!
-/// sixth line: testing with the sub spec of the last valid keys (at start it is the root spec, then the spec.subkeys of the last valid key)
+/// line 0: Unknown -> no block created before so it's an ContentOutOfKey error
+/// line 1: WithKey(exo) -> testing "exo" -> ok -> new block
+/// line 2: Unknown -> append its text to the last created block (for "exo")
+/// line 3: Comment -> ignore the comment
+/// line 4: WithKey(see) -> recursive call with subkeys spec -> testing "check" KO, level--, testing "exo" KO -> level == 0 so report the WrongKeyPosition error!
+/// line 5: WithKey(check) -> recursive call. testing "check" -> found immediately
+/// line 6: WithKey(args) -> recursive call with subkeys spec -> testing "args" OK new block
+/// line 7: WithKey(see) -> testing "args", testing "see" OK new block
+/// line 8: WithKey(args) -> testing "args" OK new block (duplicate key removed later)
+/// line 9: WithKey(type) -> testing "args", testing "see", testing "type" OK new block
+/// line 10: WithKey(check) -> testing "args", then "see", then "type", not found so remove
+/// duplicates in blocks (this creates the DuplicatedKey for "args") and return -> testing "check" OK new block
 ///
-/// TODO: clean up this algo
+/// See result of structure in test_strange_exo_parsing_can_correctly_ignore_error()
 ///
-/// ALGORITHM OVERVIEW
-/// parents_spec = [] as an stack of [&KeySpec], at each depth we store the parent spec to
-/// be able to continue with other keys on the same levels by looking at the subkeys of the parent
-/// current_spec = &root_spec // the given spec
-/// for line in lines
-///     if the line is a key
-///         loop
-///             if this current_spec contains this key
-///                 all good, the key is valid, create a new_block for it without subblocks
-///                 if key has subkeys
-///                     parents_blocks push new_block
-///                     parents_spec.push(current_spec)
-///                     current_spec = key.subkeys
-///                 else
-///                     blocks last() push new_block // as there will be no children block, we can push it
-///             else if parents_spec_by_depth is not empty // not found at this level, going up to see in childrens of parents
-///                 let merged = parents_blocks pop()
-///                 parents_blocks last() push merge // no more child blocks to find in merged
-///                 current_spec = parents_spec pop back
-///             else break // if there is no element in parents_spec, we reached the top of the spec tree, the key is not valid
-///
-///     else if the line is a comment, just ignore
-///     else if the line is a unknown
-///         if there is an existing block, append the text into int
-///         else that's an error, report it
-///
+/// FIXME: there is a very special edge case of error recovering that is not managed. The above
+/// example shows that after the WrongKeyPosition of "see" we continue with "exo", but that's only
+/// because that's the root spec, not because that's the right place to start. If had a
+/// WrongKeyPosition at level 2 and it will go up at level 0 to generate the error, a key at level
+/// 3 right after that will not be correctly extracted...
 fn build_blocks_tree<'a>(
     lines: Vec<Line<'a>>,
     spec: &ValidDYSpec,
@@ -192,8 +174,7 @@ fn build_blocks_subtree_recursive<'a>(
                     });
                     lines.next();
                 } else {
-                    eprintln!("current blocks: {blocks:?}");
-                    eprintln!("No found at this level, going up");
+                    eprintln!("No found at this level, going up\n");
                     break;
                 }
                 // break;
@@ -251,7 +232,6 @@ fn build_blocks_subtree_recursive<'a>(
             // If there is an existing block and it's key spec contains subkeys, we have to go check if they match
             if let Some(existing_block) = blocks.last_mut() {
                 if !existing_block.key.subkeys.is_empty() {
-                    eprintln!("Recursive call to level {}", level + 1);
                     let (subblocks, suberrors) = build_blocks_subtree_recursive(
                         lines,
                         existing_block.key.subkeys,
@@ -724,4 +704,85 @@ check error with duplicate
             ]
         );
     }
+
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_strange_exo_parsing_can_correctly_ignore_error() {
+        let text = "random text
+exo hey there
+some content
+// just a comment
+see not good because incorrect level
+check yes
+args 1
+see good
+args duplicated !
+type good
+check 2
+";
+        let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(
+            errors,
+            vec![
+                ParseError {
+                    range: range_on_line_with_length(0, 11),
+                    some_file: None,
+                    error: ParseErrorType::ContentOutOfKey
+                },
+                ParseError {
+                    range: range_on_line_with_length(4, 3),
+                    some_file: None,
+                    error: ParseErrorType::WrongKeyPosition("see".to_string(), "??".to_string()),
+                },
+                ParseError {
+                    range: range_on_line_with_length(8, 4),
+                    some_file: None,
+                    error: ParseErrorType::DuplicatedKey("args".to_string(), 2),
+                },
+            ]
+        );
+        assert_eq!(
+            blocks,
+            vec![Block {
+                key: EXO_SPEC,
+                text: vec!["hey there", "some content",],
+                range: range_on_lines(1, 2, 13),
+                subblocks: vec![
+                    Block {
+                        key: CHECK_SPEC,
+                        text: vec!["yes",],
+                        range: range_on_line_with_length(5, 9),
+                        subblocks: vec![
+                            Block {
+                                key: ARGS_SPEC,
+                                text: vec!["1",],
+                                range: range_on_line_with_length(6, 6),
+                                subblocks: vec![],
+                            },
+                            Block {
+                                key: SEE_SPEC,
+                                text: vec!["good",],
+                                range: range_on_line_with_length(7, 8),
+                                subblocks: vec![],
+                            },
+                            Block {
+                                key: TYPE_SPEC,
+                                text: vec!["good",],
+                                range: range_on_line_with_length(9, 9),
+                                subblocks: vec![],
+                            },
+                        ],
+                    },
+                    Block {
+                        key: CHECK_SPEC,
+                        text: vec!["2",],
+                        range: range_on_line_with_length(10, 7),
+                        subblocks: vec![],
+                    },
+                ],
+            },]
+        );
+    }
+
 }
