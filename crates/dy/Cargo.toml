@@ -1,0 +1,18 @@
+[package]
+name = "dy"
+description = "Quickly generate a delightful, light, and human readable/writable syntax"
+version = "0.0.1"
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+
+[lib]
+name = "dy"
+
+[dependencies]
+thiserror = { workspace = true }
+lsp-types = { workspace = true }
+
+[dev-dependencies]
+ntest = "0.9.3"
+pretty_assertions = "1.4.1"

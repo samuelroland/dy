@@ -12,7 +12,10 @@ pub enum ParseErrorType {
     DuplicatedKey(String, u8),
     #[error("Invalid multiline content found after the '{0}' key which is single line")]
     InvalidMultilineContent(String),
-    #[error("This content is not associated to any valid key.\nHint: maybe this should be a comment starting with {} or it needs a valid key as a prefix?", COMMENT_PREFIX)]
+    #[error(
+        "This content is not associated to any valid key.\nHint: maybe this should be a comment starting with {} or it needs a valid key as a prefix?",
+        COMMENT_PREFIX
+    )]
     ContentOutOfKey,
 }
 
