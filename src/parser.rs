@@ -3,6 +3,7 @@ use crate::spec::{all_valid_keys, KeySpec, ValidDYSpec};
 use std::collections::HashMap;
 
 pub const COMMENT_PREFIX: &str = "//";
+const MARKDOWN_CODE_SNIPPETS_SEPARATORS: &[&str; 2] = &["```", "~~~"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LineType<'a> {
@@ -49,6 +50,8 @@ pub fn tokenize_into_lines<'a>(spec: &'a ValidDYSpec, content: &'a str) -> Vec<L
     let mut lines = Vec::new();
 
     let all_keys = all_valid_keys(spec.get());
+    // For faster access to the correct key, we group them by length so when extracting the first
+    // word, we can only look at keys with the same length
     let mut all_keys_grouped_by_len: HashMap<usize, Vec<&KeySpec>> = HashMap::new();
     all_keys.iter().for_each(|k| {
         all_keys_grouped_by_len
@@ -57,10 +60,20 @@ pub fn tokenize_into_lines<'a>(spec: &'a ValidDYSpec, content: &'a str) -> Vec<L
             .push(k);
     });
 
+    let mut inside_a_markdown_code_snippet = false;
+
     for (index, line_text) in content.lines().enumerate() {
         let mut lt = LineType::Unknown;
 
-        if line_text.starts_with(COMMENT_PREFIX) {
+        for code_separator in MARKDOWN_CODE_SNIPPETS_SEPARATORS {
+            if line_text.starts_with(code_separator) {
+                inside_a_markdown_code_snippet = !inside_a_markdown_code_snippet;
+            }
+        }
+
+        if inside_a_markdown_code_snippet {
+            // just keep it as Unknown, we skill all lines inside markdown code snippets
+        } else if line_text.starts_with(COMMENT_PREFIX) {
             lt = LineType::Comment;
         } else {
             // Extract the first word before the first space, if there is no space, the first word is the entire line
@@ -108,7 +121,9 @@ fn line_starts_with_key(line: &str, prefix: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::{
-        common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC},
+        common::tests::{
+            CODE_SPEC, COURSE_SPEC, EXO_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC, TESTING_EXOS_SPEC,
+        },
         parser::{line_starts_with_key, tokenize_into_lines, Line, LinePart, LineType},
         spec::ValidDYSpec,
     };
@@ -263,77 +278,161 @@ blabla";
 
     #[test]
     #[ntest::timeout(50)]
-    fn test_can_tokenize_and_ignore_the_type_of_comment() {
-        let text = "// first comment
-some text // not a valid DY comment !
+    fn test_can_tokenize_and_ignore_anything_inside_code_blocks() {
+        let text = "
+// hey there
+exo hey there
 some instruction
-// another comment
+~~~rust
+// super function
+// ?????
+fn main() {
+    // hey yooo
+}
+
+// ignored prefix
+exo hey
+see something
 ~~~
-// another comment
-some code
-// another comment
-hey there !//
-~~~
-// another comment outside
+// ignored
+
+```
+// super css
+h1{
+color:blue; // included
+}
+/* included */
+```
+// ignored again!
 ";
-        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
+        let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
         let lines = tokenize_into_lines(&binding, text);
         assert_eq!(
             lines,
             vec![
                 Line {
                     index: 0,
-                    slice: "// first comment",
-                    lt: LineType::Comment,
-                },
-                Line {
-                    index: 1,
-                    slice: "some text // not a valid DY comment !",
+                    slice: "",
                     lt: LineType::Unknown
                 },
                 Line {
+                    index: 1,
+                    slice: "// hey there",
+                    lt: LineType::Comment,
+                },
+                Line {
                     index: 2,
+                    slice: "exo hey there",
+                    lt: LineType::WithKey(EXO_SPEC)
+                },
+                Line {
+                    index: 3,
                     slice: "some instruction",
                     lt: LineType::Unknown
                 },
                 Line {
-                    index: 3,
-                    slice: "// another comment",
-                    lt: LineType::Comment,
-                },
-                Line {
                     index: 4,
-                    slice: "~~~",
+                    slice: "~~~rust",
                     lt: LineType::Unknown
                 },
                 Line {
                     index: 5,
-                    slice: "// another comment",
-                    lt: LineType::Comment,
+                    slice: "// super function",
+                    lt: LineType::Unknown,
                 },
                 Line {
                     index: 6,
-                    slice: "some code",
-                    lt: LineType::Unknown
+                    slice: "// ?????",
+                    lt: LineType::Unknown,
                 },
                 Line {
                     index: 7,
-                    slice: "// another comment",
-                    lt: LineType::Comment,
+                    slice: "fn main() {",
+                    lt: LineType::Unknown
                 },
                 Line {
                     index: 8,
-                    slice: "hey there !//",
+                    slice: "    // hey yooo",
                     lt: LineType::Unknown
                 },
                 Line {
                     index: 9,
-                    slice: "~~~",
+                    slice: "}",
                     lt: LineType::Unknown
                 },
                 Line {
                     index: 10,
-                    slice: "// another comment outside",
+                    slice: "",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 11,
+                    slice: "// ignored prefix",
+                    lt: LineType::Unknown,
+                },
+                Line {
+                    index: 12,
+                    slice: "exo hey",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 13,
+                    slice: "see something",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 14,
+                    slice: "~~~",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 15,
+                    slice: "// ignored",
+                    lt: LineType::Comment,
+                },
+                Line {
+                    index: 16,
+                    slice: "",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 17,
+                    slice: "```",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 18,
+                    slice: "// super css",
+                    lt: LineType::Unknown,
+                },
+                Line {
+                    index: 19,
+                    slice: "h1{",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 20,
+                    slice: "color:blue; // included",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 21,
+                    slice: "}",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 22,
+                    slice: "/* included */",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 23,
+                    slice: "```",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 24,
+                    slice: "// ignored again!",
                     lt: LineType::Comment,
                 },
             ]
