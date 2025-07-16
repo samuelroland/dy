@@ -2,12 +2,18 @@ use std::fmt::Display;
 
 use lsp_types::Range;
 
+use crate::parser::COMMENT_PREFIX;
+
 #[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
 pub enum ParseErrorType {
     #[error("The '{0}' key can be only used under a `{1}`")]
     WrongKeyPosition(String, String),
-    #[error("The '{0}' key can only be used once {msg}", msg = if *.1 == 0 {"in document root"} else {"at this level"})]
+    #[error("The '{0}' key can only be used once {level}", level = if *.1 == 0 {"in document root"} else {"at this level"})]
     DuplicatedKey(String, u8),
+    #[error("Invalid multiline content found after the '{0}' key which is single line")]
+    InvalidMultilineContent(String),
+    #[error("This content is not associated to any valid key.\nHint: maybe this should be a comment starting with {} or it needs a valid key as a prefix?", COMMENT_PREFIX)]
+    ContentOutOfKey,
 }
 
 #[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
