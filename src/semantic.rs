@@ -218,8 +218,21 @@ fn build_blocks_subtree_recursive<'a>(
             }
             LineType::Unknown => {
                 if let Some(existing_block) = blocks.last_mut() {
-                    existing_block.text.push(line.slice);
-                    existing_block.range.end.line = line.index as u32;
+                    if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                        errors.push(ParseError {
+                            range: range_on_line_with_length(
+                                line.index as u32,
+                                line.slice.len() as u32,
+                            ),
+                            some_file: None,
+                            error: ParseErrorType::InvalidMultilineContent(
+                                existing_block.key.id.to_string(),
+                            ),
+                        });
+                    } else {
+                        existing_block.text.push(line.slice);
+                        existing_block.range.end.line = line.index as u32;
+                    }
                 } else {
                     // todo manage errors
                     eprintln!("why ?? {}", line.slice);
@@ -478,5 +491,46 @@ C desc 2
             ]
         );
         assert_eq!(errors, vec![]);
+    }
+
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_can_detect_invalid_multiline_content() {
+        let text = "course Programmation 1
+some multiline content oups
+code PRG1
+goal Apprendre des bases solides du C++";
+        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(
+            errors,
+            vec![ParseError {
+                range: range_on_line_with_length(1, 27),
+                some_file: None,
+                error: ParseErrorType::InvalidMultilineContent("course".to_string())
+            }]
+        );
+        assert_eq!(
+            blocks,
+            vec![Block {
+                key: COURSE_SPEC,
+                text: vec!["Programmation 1"],
+                range: range_on_line_with_length(0, 22),
+                subblocks: vec![
+                    Block {
+                        key: CODE_SPEC,
+                        text: vec!["PRG1"],
+                        range: range_on_line_with_length(2, 9),
+                        subblocks: vec![],
+                    },
+                    Block {
+                        key: GOAL_SPEC,
+                        text: vec!["Apprendre des bases solides du C++"],
+                        range: range_on_line_with_length(3, 39),
+                        subblocks: vec![],
+                    },
+                ],
+            }]
+        );
     }
 }
