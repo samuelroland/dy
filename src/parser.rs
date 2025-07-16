@@ -196,6 +196,7 @@ code PRG1
 goal Apprendre des bases solides du C++
 
 // yet another one
+ // not a comment
 ";
         assert_eq!(
             tokenize_into_lines(&ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap(), text),
@@ -235,6 +236,11 @@ goal Apprendre des bases solides du C++
                     slice: "// yet another one",
                     lt: LineType::Comment,
                 },
+                Line {
+                    index: 7,
+                    slice: " // not a comment",
+                    lt: LineType::Unknown,
+                },
             ]
         );
     }
@@ -253,5 +259,84 @@ blabla";
         assert_eq!(lines.len(), 5);
         dbg!(&lines);
         assert!(&lines.iter().all(|l| l.lt == LineType::Unknown));
+    }
+
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_can_tokenize_and_ignore_the_type_of_comment() {
+        let text = "// first comment
+some text // not a valid DY comment !
+some instruction
+// another comment
+~~~
+// another comment
+some code
+// another comment
+hey there !//
+~~~
+// another comment outside
+";
+        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
+        let lines = tokenize_into_lines(&binding, text);
+        assert_eq!(
+            lines,
+            vec![
+                Line {
+                    index: 0,
+                    slice: "// first comment",
+                    lt: LineType::Comment,
+                },
+                Line {
+                    index: 1,
+                    slice: "some text // not a valid DY comment !",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 2,
+                    slice: "some instruction",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 3,
+                    slice: "// another comment",
+                    lt: LineType::Comment,
+                },
+                Line {
+                    index: 4,
+                    slice: "~~~",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 5,
+                    slice: "// another comment",
+                    lt: LineType::Comment,
+                },
+                Line {
+                    index: 6,
+                    slice: "some code",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 7,
+                    slice: "// another comment",
+                    lt: LineType::Comment,
+                },
+                Line {
+                    index: 8,
+                    slice: "hey there !//",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 9,
+                    slice: "~~~",
+                    lt: LineType::Unknown
+                },
+                Line {
+                    index: 10,
+                    slice: "// another comment outside",
+                    lt: LineType::Comment,
+                },
+            ]
+        );
     }
 }
