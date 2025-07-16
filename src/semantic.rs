@@ -16,14 +16,14 @@ use crate::{
 /// A block represents the instance of a key found in the text, including subblocks for subkeys.
 /// A block has a textual value for its key under field `text`
 pub struct Block<'a> {
-    key: &'a KeySpec<'a>,
+    pub key: &'a KeySpec<'a>,
     /// The text contained in the value of this block, when multiline it can contains several &str
     /// This doesn't contain the key
-    text: Vec<&'a str>,
+    pub text: Vec<&'a str>,
     /// The full range of all lines used to describe this block, including subblocks
-    range: Range,
+    pub range: Range,
     /// The sub blocks
-    subblocks: Vec<Block<'a>>,
+    pub subblocks: Vec<Block<'a>>,
 }
 
 impl<'a> Block<'a> {
@@ -33,6 +33,20 @@ impl<'a> Block<'a> {
         self.text.push(line);
         self.range.end.line = line_index as u32;
         self.range.end.character = line.len() as u32;
+    }
+
+    /// Get the different recolted lines into a single String, after triming the final text
+    pub fn get_joined_text(&self) -> String {
+        self.text.join("\n").trim().to_string()
+    }
+
+    /// Split joined text with at split the text after `split_after_lines` lines and returns a tuple of both trim results
+    pub fn get_text_with_joined_splits_at(&self, split_after_lines: usize) -> (String, String) {
+        let (first, second) = self.text.split_at(split_after_lines);
+        (
+            first.join("\n").trim().to_string(),
+            second.join("\n").trim().to_string(),
+        )
     }
 }
 
@@ -107,9 +121,9 @@ impl<'a> Debug for Block<'a> {
 /// because that's the root spec, not because that's the right place to start. If had a
 /// WrongKeyPosition at level 2 and it will go up at level 0 to generate the error, a key at level
 /// 3 right after that will not be correctly extracted...
-fn build_blocks_tree<'a>(
-    lines: Vec<Line<'a>>,
+pub fn build_blocks_tree<'a>(
     spec: &ValidDYSpec,
+    lines: Vec<Line<'a>>,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
     let (blocks, mut errors) =
         build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0, None);
@@ -122,7 +136,7 @@ fn build_blocks_tree<'a>(
 }
 
 /// Recursive function to build a subtree of blocks
-pub fn build_blocks_subtree_recursive<'a>(
+fn build_blocks_subtree_recursive<'a>(
     lines: &mut Peekable<std::slice::Iter<'_, Line<'a>>>,
     specs: &DYSpec,
     level: u8,
@@ -319,7 +333,7 @@ mod tests {
         text: &'a str,
     ) -> (std::vec::Vec<Block<'a>>, std::vec::Vec<ParseError>) {
         let lines = tokenize_into_lines(spec, text);
-        build_blocks_tree(lines, spec)
+        build_blocks_tree(spec, lines)
     }
 
     #[test]
@@ -330,7 +344,7 @@ code PRG1
 goal Apprendre des bases solides du C++";
         let spec = &ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
         let lines = tokenize_into_lines(spec, text);
-        let (blocks, errors) = build_blocks_tree(lines, spec);
+        let (blocks, errors) = build_blocks_tree(spec, lines);
 
         assert_eq!(
             blocks,
