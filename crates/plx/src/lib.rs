@@ -1,4 +1,5 @@
 pub mod course;
+pub mod exo;
 pub mod skill;
 
 const COURSE_FILE: &str = "course.dy";
