@@ -140,9 +140,7 @@ fn build_blocks_subtree_recursive<'a>(
     );
     let mut errors: Vec<ParseError> = Vec::new();
     let mut blocks: Vec<Block> = Vec::new();
-
-    // TODO: change this to a normal vec with an index access, to improve performance
-    let mut once_keys_found: HashSet<&str> = HashSet::new();
+    let mut blocks_starting_line_indexes: Vec<usize> = Vec::new();
 
     while let Some(line) = lines.peek() {
         match line.lt {
@@ -152,45 +150,30 @@ fn build_blocks_subtree_recursive<'a>(
                     );
                 if specs.iter().any(|s| s.id == associated_spec.id) {
                     // eprintln!("Found {}", associated_spec.id);
-                    // Make sure keys with once=true are not inserted more than once !
-                    if associated_spec.once && !once_keys_found.insert(associated_spec.id) {
-                        eprintln!("Found DuplicatedKey on line: {}", line.slice);
-                        errors.push(ParseError {
-                            range: range_on_line_with_length(
-                                line.index as u32,
-                                associated_spec.id.len() as u32,
-                            ),
-                            some_file: None,
-                            error: ParseErrorType::DuplicatedKey(
-                                associated_spec.id.to_string(),
-                                level,
-                            ),
-                        });
-                    } else {
-                        // Build the new block as it is valid
-                        let parts = line.tokenize_parts();
-                        let text = parts
-                            .iter()
-                            .filter_map(|f| {
-                                if let LinePart::Value(a) = f {
-                                    Some(*a)
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                        let new_block = Block {
-                            key: associated_spec,
-                            text,
-                            range: Range::new(
-                                Position::new(line.index as u32, 0),
-                                Position::new(line.index as u32, line.slice.len() as u32),
-                            ),
-                            subblocks: vec![],
-                        };
-                        eprintln!("New block: {new_block:?}");
-                        blocks.push(new_block); // TODO fix
-                    }
+                    // Build the new block as it is valid
+                    let parts = line.tokenize_parts();
+                    let text = parts
+                        .iter()
+                        .filter_map(|f| {
+                            if let LinePart::Value(a) = f {
+                                Some(*a)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    let new_block = Block {
+                        key: associated_spec,
+                        text,
+                        range: Range::new(
+                            Position::new(line.index as u32, 0),
+                            Position::new(line.index as u32, line.slice.len() as u32),
+                        ),
+                        subblocks: vec![],
+                    };
+                    eprintln!("New block: {new_block:?}");
+                    blocks.push(new_block);
+                    blocks_starting_line_indexes.push(line.index);
 
                     // The line was valid, we can move to the next line
                     lines.next();
@@ -281,7 +264,28 @@ fn build_blocks_subtree_recursive<'a>(
             }
         }
     }
-    (blocks, errors)
+
+    // Once the blocks have been entirely extracted at this level (with possible subkeys)
+    // there are ready to be removed in case they are duplicates !
+    let mut once_keys_found: HashSet<&str> = HashSet::new(); // TODO: change this to a normal vec with an index access, to improve performance
+    let mut non_duplicated_blocks = Vec::with_capacity(blocks.len());
+    for (idx, block) in blocks.into_iter().enumerate() {
+        // Make sure keys with once=true are not inserted more than once !
+        if block.key.once && !once_keys_found.insert(block.key.id) {
+            errors.push(ParseError {
+                range: range_on_line_with_length(
+                    blocks_starting_line_indexes[idx] as u32,
+                    block.key.id.len() as u32,
+                ),
+                some_file: None,
+                error: ParseErrorType::DuplicatedKey(block.key.id.to_string(), level),
+            });
+        } else {
+            non_duplicated_blocks.push(block);
+        }
+    }
+
+    (non_duplicated_blocks, errors)
 }
 
 /// Util function to create a new range on a single line, at given line index, from position 0 to given length
@@ -620,7 +624,7 @@ exit double exit !
 
 // Another one !
 exo duplicated invalid exo !
-// check error with duplicate
+check error with duplicate
 "; // the challenge is to be able to ignore the check here as the exo key was ignored
         let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
         let (blocks, errors) = get_blocks(&binding, text);
