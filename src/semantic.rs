@@ -204,6 +204,7 @@ pub fn build_blocks_subtree_recursive<'a>(
                     } else {
                         existing_block.text.push(line.slice);
                         existing_block.range.end.line = line.index as u32;
+                        existing_block.range.end.character = line.slice.len() as u32;
                     }
                 } else if !line.slice.trim().is_empty() {
                     eprintln!("Found ContentOutOfKey on line: {}", line.slice);
@@ -472,7 +473,7 @@ C desc 2
                 Block {
                     key: SKILL_SPEC,
                     text: vec!["A", "A desc", "A desc 2"],
-                    range: range_on_lines(2, 6, 7),
+                    range: range_on_lines(2, 6, 8),
                     subblocks: vec![Block {
                         key: SUBSKILL_SPEC,
                         text: vec!["AA",],
@@ -483,11 +484,11 @@ C desc 2
                 Block {
                     key: SKILL_SPEC,
                     text: vec!["B", "B desc"],
-                    range: range_on_lines(8, 10, 7),
+                    range: range_on_lines(8, 10, 6),
                     subblocks: vec![Block {
                         key: SUBSKILL_SPEC,
                         text: vec!["C", "C desc", "C desc 2",],
-                        range: range_on_lines(12, 17, 10),
+                        range: range_on_lines(12, 17, 8),
                         subblocks: vec![],
                     },],
                 },
@@ -633,8 +634,8 @@ check error with duplicate
             vec![
                 Block {
                     key: EXO_SPEC,
-                    text: vec!["hey", "a great instruction", "on several lines",],
-                    range: range_on_lines(1, 3, 7),
+                    text: vec!["hey", "a great instruction", "on several lines", ""],
+                    range: range_on_lines(1, 4, 0),
                     subblocks: vec![
                         Block {
                             key: CHECK_SPEC,
@@ -747,7 +748,7 @@ check 2
             vec![Block {
                 key: EXO_SPEC,
                 text: vec!["hey there", "some content",],
-                range: range_on_lines(1, 2, 13),
+                range: range_on_lines(1, 2, 12),
                 subblocks: vec![
                     Block {
                         key: CHECK_SPEC,
@@ -813,9 +814,8 @@ some code
                     "some code",
                     "",
                     "~~~",
-                    "",
                 ],
-                range: range_on_lines(0, 8, 0),
+                range: range_on_lines(0, 7, 3),
                 subblocks: vec![],
             },]
         );
