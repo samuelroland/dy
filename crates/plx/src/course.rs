@@ -1,12 +1,4 @@
-// Testing the DY parser with the spec of PLX course
-// use dy::parser::{parse_with_spec, ParseResult};
-// use dy::spec::{DYSpec, KeySpec};
-
-// How to define these 3 keys, with "course" as the entity prefix
-// course single line but entity
-//     code single line
-//     goal -> multline
-
+/// The DY spec for parsing PLX course. Given a string, parse it into `DYCourse` and generate some errors
 use dy::{
     FromDYBlock, ParseResult,
     error::ParseError,
@@ -41,7 +33,9 @@ pub const COURSE_SPEC: &KeySpec = &KeySpec {
     kt: KeyType::SingleLine,
     once: true,
 };
-pub const TESTING_COURSE_SPEC: &DYSpec = &[COURSE_SPEC];
+// Note: to avoid double definition of COURSE_SPEC we use the plural form
+// even though only one course can be extracted
+pub const COURSES_SPEC: &DYSpec = &[COURSE_SPEC];
 
 impl<'a> FromDYBlock<'a> for DYCourse {
     fn from_block(block: &Block<'a>) -> DYCourse {
@@ -70,7 +64,7 @@ impl<'a> FromDYBlock<'a> for DYCourse {
 
 pub fn parse_course(content: &str) -> ParseResult<DYCourse> {
     parse_with_spec::<DYCourse>(
-        &ValidDYSpec::new(TESTING_COURSE_SPEC).expect("TESTING_COURSE_SPEC is invalid !"),
+        &ValidDYSpec::new(COURSES_SPEC).expect("TESTING_COURSE_SPEC is invalid !"),
         content,
     )
 }
