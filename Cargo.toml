@@ -1,14 +1,12 @@
-[package]
-name = "dy"
-description = "Quickly generate a delightful, light, and human readable/writable syntax"
-version = "0.0.1"
-edition = "2021"
+[workspace.package]
+authors = ["Samuel Roland"]
+edition = "2024"
 license-file = "LICENSE"
 
-[dependencies]
+[workspace.dependencies]
 lsp-types = "0.97.0"
 thiserror = "2.0.12"
 
-[dev-dependencies]
-ntest = "0.9.3"
-pretty_assertions = "1.4.1"
+[workspace]
+members = ["crates/dy", "crates/plx"]
+resolver = "2"

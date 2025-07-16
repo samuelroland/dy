@@ -114,6 +114,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "plx-dy"
+version = "0.0.1"
+dependencies = [
+ "dy",
+ "ntest",
+ "pretty_assertions",
+]
+
+[[package]]
 name = "pretty_assertions"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
