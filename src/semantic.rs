@@ -13,6 +13,8 @@ use crate::{
 };
 
 #[derive(PartialEq)]
+/// A block represents the instance of a key found in the text, including subblocks for subkeys.
+/// A block has a textual value for its key under field `text`
 pub struct Block<'a> {
     key: &'a KeySpec<'a>,
     /// The text contained in the value of this block, when multiline it can contains several &str
@@ -22,6 +24,16 @@ pub struct Block<'a> {
     range: Range,
     /// The sub blocks
     subblocks: Vec<Block<'a>>,
+}
+
+impl<'a> Block<'a> {
+    /// Push a new line of text, with given line and the line index where it was found
+    /// The line_index is necessary because comments could be present in the middle of the text
+    fn push_text(&mut self, line: &'a str, line_index: usize) {
+        self.text.push(line);
+        self.range.end.line = line_index as u32;
+        self.range.end.character = line.len() as u32;
+    }
 }
 
 // Implement Debug so we can have a shorter display of Range
@@ -175,11 +187,8 @@ pub fn build_blocks_subtree_recursive<'a>(
                     lines.next();
                 } else {
                     eprintln!("No found at this level, going up\n");
-                    break;
+                    break; // break the while, so we return from this function
                 }
-                // break;
-                // If we reach this point, the key_spec.id is not a valid key at this level !
-                // TODO store the error
             }
             LineType::Comment => {
                 eprintln!("SKipping comment: {}!", line.slice);
@@ -202,9 +211,7 @@ pub fn build_blocks_subtree_recursive<'a>(
                             });
                         }
                     } else {
-                        existing_block.text.push(line.slice);
-                        existing_block.range.end.line = line.index as u32;
-                        existing_block.range.end.character = line.slice.len() as u32;
+                        existing_block.push_text(line.slice, line.index);
                     }
                 } else if !line.slice.trim().is_empty() {
                     eprintln!("Found ContentOutOfKey on line: {}", line.slice);
