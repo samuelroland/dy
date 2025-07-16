@@ -71,7 +71,7 @@ pub mod tests {
         id: "exo",
         subkeys: &[CHECK_SPEC],
         kt: KeyType::Multiline,
-        once: false,
+        once: true, // for now, only one exo per file
     };
     pub const TESTING_EXOS_SPEC: &DYSpec = &[EXO_SPEC];
 }
