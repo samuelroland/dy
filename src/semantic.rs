@@ -127,6 +127,10 @@ fn build_blocks_subtree_recursive<'a>(
     level: u8,
     parent_spec: Option<&KeySpec>,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
+    eprintln!(
+        "\n>> build_blocks_subtree_recursive: line: {:?}, specs: {specs:?}, level {level}",
+        lines.peek()
+    );
     let mut errors: Vec<ParseError> = Vec::new();
     let mut blocks: Vec<Block> = Vec::new();
 
@@ -136,10 +140,9 @@ fn build_blocks_subtree_recursive<'a>(
     while let Some(line) = lines.peek() {
         match line.lt {
             LineType::WithKey(associated_spec) => {
-                // eprintln!("Checking line WithKey: {}", line.slice);
-                eprintln!(
-                        "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
-                    );
+                // eprintln!(
+                //         "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
+                //     );
                 if specs.iter().any(|s| s.id == associated_spec.id) {
                     // Make sure keys with once=true are not inserted more than once !
                     if associated_spec.once {
@@ -173,7 +176,7 @@ fn build_blocks_subtree_recursive<'a>(
                             }
                         })
                         .collect();
-                    let mut new_block = Block {
+                    let new_block = Block {
                         key: associated_spec,
                         text,
                         range: Range::new(
@@ -182,41 +185,11 @@ fn build_blocks_subtree_recursive<'a>(
                         ),
                         subblocks: vec![],
                     };
-
                     println!("New block: {new_block:?}");
+                    blocks.push(new_block); // TODO fix
 
                     // The line was valid, we can move to the next line
                     lines.next();
-
-                    // If there are subkeys and the next li
-                    if !associated_spec.subkeys.is_empty()
-                        && matches!(
-                            lines.peek(),
-                            Some(Line {
-                                lt: LineType::WithKey(_),
-                                ..
-                            })
-                        )
-                    {
-                        eprintln!("Recursive call to level {}", level + 1);
-                        let (subblocks, suberrors) = build_blocks_subtree_recursive(
-                            lines,
-                            associated_spec.subkeys,
-                            level + 1,
-                            Some(associated_spec),
-                        );
-                        dbg!(&subblocks, &suberrors);
-                        new_block.subblocks = subblocks;
-                        errors.extend(suberrors);
-                        // if !new_block.subblocks.is_empty() {
-                        //     blocks.push(new_block); // we can save the block at this point
-                        //     current_new_block = None; // no more Unknown lines can be added to block.text after children blocks have been found
-                        //                               // block.
-                        // }
-                    } else {
-                        // current_new_block = Some(new_block);
-                    }
-                    blocks.push(new_block); // TODO fix
                 } else if level == 0 {
                     eprintln!("Found WrongKeyPosition !");
                     errors.push(ParseError {
@@ -239,26 +212,65 @@ fn build_blocks_subtree_recursive<'a>(
                 // If we reach this point, the key_spec.id is not a valid key at this level !
                 // TODO store the error
             }
-            LineType::Comment => continue,
+            LineType::Comment => {
+                eprintln!("SKipping comment: {}!", line.slice);
+                lines.next();
+            }
             LineType::Unknown => {
-                // if let Some(existing_block) = parents_blocks.last_mut() {
-                //     existing_block.text.push(line.slice);
-                //     existing_block.range.end.line = line.index as u32;
-                // } else {
-                //     // todo manage errors
-                // }
+                if let Some(existing_block) = blocks.last_mut() {
+                    existing_block.text.push(line.slice);
+                    existing_block.range.end.line = line.index as u32;
+                } else {
+                    // todo manage errors
+                    eprintln!("why ?? {}", line.slice);
+                }
+                lines.next();
+            }
+        }
+
+        // As the line is WithKey, we may need to go check the subkeys
+        if matches!(
+            lines.peek(),
+            Some(Line {
+                lt: LineType::WithKey(_),
+                ..
+            })
+        ) {
+            // If there is an existing block and it's key spec contains subkeys, we have to go check if they match
+            if let Some(existing_block) = blocks.last_mut() {
+                if !existing_block.key.subkeys.is_empty() {
+                    eprintln!("Recursive call to level {}", level + 1);
+                    let (subblocks, suberrors) = build_blocks_subtree_recursive(
+                        lines,
+                        existing_block.key.subkeys,
+                        level + 1,
+                        Some(existing_block.key),
+                    );
+                    errors.extend(suberrors);
+                    existing_block.subblocks = subblocks;
+                }
             }
         }
     }
     (blocks, errors)
 }
 
-/// Util function to create a new range on a single line, at given line indes, from position 0 to given length
+/// Util function to create a new range on a single line, at given line index, from position 0 to given length
 fn range_on_line_with_length(line: u32, length: u32) -> Range {
     Range {
         start: Position { line, character: 0 },
         end: Position {
             line,
+            character: length,
+        },
+    }
+}
+/// Util function to create a new range on given line indexes from start of first line to to given length in last line
+fn range_on_lines(line: u32, line2: u32, length: u32) -> Range {
+    Range {
+        start: Position { line, character: 0 },
+        end: Position {
+            line: line2,
             character: length,
         },
     }
@@ -269,7 +281,7 @@ mod tests {
 
     use crate::common::tests::{SKILL_SPEC, SUBSKILL_SPEC, TESTING_SKILLS_SPEC};
     use crate::error::{ParseError, ParseErrorType};
-    use crate::semantic::range_on_line_with_length;
+    use crate::semantic::{range_on_line_with_length, range_on_lines};
     use crate::{
         common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC},
         parser::tokenize_into_lines,
@@ -438,7 +450,33 @@ C desc 2
 ";
         let binding = ValidDYSpec::new(TESTING_SKILLS_SPEC).unwrap();
         let (blocks, errors) = get_blocks(&binding, text);
-        assert_eq!(blocks, vec![]);
+        assert_eq!(
+            blocks,
+            vec![
+                Block {
+                    key: SKILL_SPEC,
+                    text: vec!["A", "A desc", "A desc 2"],
+                    range: range_on_lines(2, 6, 7),
+                    subblocks: vec![Block {
+                        key: SUBSKILL_SPEC,
+                        text: vec!["AA",],
+                        range: range_on_line_with_length(7, 11),
+                        subblocks: vec![],
+                    },],
+                },
+                Block {
+                    key: SKILL_SPEC,
+                    text: vec!["B", "B desc"],
+                    range: range_on_lines(8, 10, 7),
+                    subblocks: vec![Block {
+                        key: SUBSKILL_SPEC,
+                        text: ["C", "C desc", "C desc 2",].to_vec(),
+                        range: range_on_lines(12, 17, 10),
+                        subblocks: vec![],
+                    },],
+                },
+            ]
+        );
         assert_eq!(errors, vec![]);
     }
 }
