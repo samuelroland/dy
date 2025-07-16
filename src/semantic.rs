@@ -186,9 +186,9 @@ fn build_blocks_subtree_recursive<'a>(
                 lines.next();
             }
             LineType::Unknown => {
-                if !line.slice.trim().is_empty() {
-                    if let Some(existing_block) = blocks.last_mut() {
-                        if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                if let Some(existing_block) = blocks.last_mut() {
+                    if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                        if !line.slice.trim().is_empty() {
                             eprintln!("Found InvalidMultilineContent on line: {}", line.slice);
                             errors.push(ParseError {
                                 range: range_on_line_with_length(
@@ -200,22 +200,22 @@ fn build_blocks_subtree_recursive<'a>(
                                     existing_block.key.id.to_string(),
                                 ),
                             });
-                        } else {
-                            existing_block.text.push(line.slice);
-                            existing_block.range.end.line = line.index as u32;
                         }
                     } else {
-                        eprintln!("Found ContentOutOfKey on line: {}", line.slice);
-                        // non empty lines without an existing block are ContentOutOfKey
-                        errors.push(ParseError {
-                            range: range_on_line_with_length(
-                                line.index as u32,
-                                line.slice.len() as u32,
-                            ),
-                            some_file: None,
-                            error: ParseErrorType::ContentOutOfKey,
-                        });
+                        existing_block.text.push(line.slice);
+                        existing_block.range.end.line = line.index as u32;
                     }
+                } else if !line.slice.trim().is_empty() {
+                    eprintln!("Found ContentOutOfKey on line: {}", line.slice);
+                    // non empty lines without an existing block are ContentOutOfKey
+                    errors.push(ParseError {
+                        range: range_on_line_with_length(
+                            line.index as u32,
+                            line.slice.len() as u32,
+                        ),
+                        some_file: None,
+                        error: ParseErrorType::ContentOutOfKey,
+                    });
                 }
                 lines.next();
             }
@@ -785,4 +785,39 @@ check 2
         );
     }
 
+    #[test]
+    #[ntest::timeout(50)]
+    fn test_empty_lines_are_present_in_block_text() {
+        let text = "exo hey there
+some instruction
+
+~~~
+
+some code
+
+~~~
+";
+        let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(errors, vec![]);
+        assert_eq!(
+            blocks,
+            vec![Block {
+                key: EXO_SPEC,
+                text: vec![
+                    "hey there",
+                    "some instruction",
+                    "",
+                    "~~~",
+                    "",
+                    "some code",
+                    "",
+                    "~~~",
+                    "",
+                ],
+                range: range_on_lines(0, 8, 0),
+                subblocks: vec![],
+            },]
+        );
+    }
 }
