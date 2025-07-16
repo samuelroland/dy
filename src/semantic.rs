@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(PartialEq)]
-struct Block<'a> {
+pub struct Block<'a> {
     key: &'a KeySpec<'a>,
     /// The text contained in the value of this block, when multiline it can contains several &str
     /// This doesn't contain the key
@@ -110,7 +110,7 @@ fn build_blocks_tree<'a>(
 }
 
 /// Recursive function to build a subtree of blocks
-fn build_blocks_subtree_recursive<'a>(
+pub fn build_blocks_subtree_recursive<'a>(
     lines: &mut Peekable<std::slice::Iter<'_, Line<'a>>>,
     specs: &DYSpec,
     level: u8,

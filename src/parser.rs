@@ -29,7 +29,7 @@ pub enum LinePart<'a> {
 }
 
 impl<'a> Line<'a> {
-    pub fn tokenize_parts(&self) -> Vec<LinePart<'a>> {
+    pub(crate) fn tokenize_parts(&self) -> Vec<LinePart<'a>> {
         match self.lt {
             LineType::WithKey(key_spec) => {
                 vec![
@@ -45,7 +45,7 @@ impl<'a> Line<'a> {
 /// Take all the lines of `content`, take a flat list of all valid keys in `spec`
 /// and categorize lines between comments, starting with a key and put all the others in the `unknown` category.
 /// A WithKey Line is not verified to be at a valid position !
-pub(crate) fn tokenize_into_lines<'a>(spec: &'a ValidDYSpec, content: &'a str) -> Vec<Line<'a>> {
+pub fn tokenize_into_lines<'a>(spec: &'a ValidDYSpec, content: &'a str) -> Vec<Line<'a>> {
     let mut lines = Vec::new();
 
     let all_keys = all_valid_keys(spec.get());
