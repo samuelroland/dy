@@ -1,0 +1,17 @@
+[package]
+name = "plx-dy"
+description = "DY specification for PLX, to easily parse course, skills and exercises"
+version = "0.0.1"
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+
+[lib]
+name = "plx_dy"
+
+[dependencies]
+dy = { path = "../dy/" }
+
+[dev-dependencies]
+ntest = "0.9.3"
+pretty_assertions = "1.4.1"
