@@ -23,6 +23,8 @@ pub struct KeySpec<'a> {
     /// If required is true, it makes sure there is at least one instance of this key everytime
     /// there is place for this key to exist, and it also make sure the values is not empty.
     /// It can generate MissingRequiredKey and MissingRequiredValue errors
+    /// Note: if required = false, the MissingRequiredValue error not be generated ! Each spec has
+    /// the responsability to take care of that.
     pub required: bool,
 }
 

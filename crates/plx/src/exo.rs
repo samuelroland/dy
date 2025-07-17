@@ -56,7 +56,7 @@ pub const TYPE_SPEC: &KeySpec = &KeySpec {
     id: "type",
     desc: "The `type` action simulate typing in the terminal and hitting enter. It inject the given text in the standard input at once after appending a `\\n` at the end of the text.",
     subkeys: &[],
-    vt: ValueType::SingleLine, // we can only type a single line of text
+    vt: ValueType::SingleLine, // we can only type a single line of text. The type value can be empty, it just means we type enter without anything before.
     once: false,
     required: false,
 };
@@ -108,7 +108,23 @@ impl<'a> FromDYBlock<'a> for DYExo {
                 for check_subblock in exo_subblock.subblocks.iter() {
                     let check_subblock_id = check_subblock.key.id;
                     if check_subblock_id == ARGS_SPEC.id {
-                        check.args = check_subblock.text.iter().map(|s| s.to_string()).collect()
+                        let args_text = &check_subblock.get_joined_text();
+                        if args_text.is_empty() {
+                            errors.push(ParseError {
+                                // Note: the range is pointing just after the key as it's where the value need to come
+                                range: range_on_line_part(
+                                    check_subblock.range.start.line,
+                                    check_subblock_id.len() as u32,
+                                    check_subblock_id.len() as u32,
+                                ),
+                                some_file: None,
+                                error: ParseErrorType::MissingRequiredValue(
+                                    check_subblock_id.to_string(),
+                                ),
+                            });
+                        } else {
+                            check.args = split_args_string(args_text);
+                        }
                     }
                     if check_subblock_id == EXIT_SPEC.id {
                         check.exit = None;
@@ -149,6 +165,18 @@ impl<'a> FromDYBlock<'a> for DYExo {
     }
 }
 
+// For now we only break on space, that's a bit limited if we need to have args that include space
+// in them. This will be fixed in the future when needed.
+fn split_args_string(line: &str) -> Vec<String> {
+    if line.is_empty() {
+        vec![]
+    } else {
+        line.split(' ')
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+    }
+}
+
 pub fn parse_exos(content: &str) -> ParseResult<DYExo> {
     parse_with_spec(
         &ValidDYSpec::new(EXOS_SPEC).expect("EXOS_SPEC is invalid !"),
@@ -180,7 +208,7 @@ Do not use a regex. Try to avoid repeating the validation logic.
 The goal is to train input/output with `printf` and `scanf`.
 
 check Can enter the full name and be greeted
-args kinda useless
+args kinda
 see What is your firstname ?
 type John
 see Hello John, what's your lastname ?
@@ -203,7 +231,7 @@ exit 2
                     checks: vec![
                         Check {
                             name: "Can enter the full name and be greeted".to_string(),
-                            args: vec!["kinda useless".to_string(),],
+                            args: vec!["kinda".to_string(),],
                             exit: Some(0,),
                             sequence: vec![
                                 TermAction::See("What is your firstname ?".to_string(),),
@@ -256,6 +284,72 @@ exit blabla
                     error: ParseErrorType::ValidationError(
                         ERROR_CANNOT_PARSE_EXIT_CODE.to_string()
                     )
+                }]
+            }
+        )
+    }
+
+    #[test]
+    fn test_can_extract_args_by_space_split() {
+        let text = "exo test
+check test
+args 1 2 3 hey there
+see hello
+";
+        assert_eq!(
+            parse_exos(text),
+            ParseResult {
+                items: vec![DYExo {
+                    name: "test".to_string(),
+                    instruction: "".to_string(),
+                    checks: vec![Check {
+                        name: "test".to_string(),
+                        args: vec![
+                            "1".to_string(),
+                            "2".to_string(),
+                            "3".to_string(),
+                            "hey".to_string(),
+                            "there".to_string()
+                        ],
+                        exit: None,
+                        sequence: vec![TermAction::See("hello".to_string(),),],
+                    },],
+                }],
+                errors: vec![]
+            }
+        )
+    }
+
+    #[test]
+    fn test_detect_empty_args_error_but_ignores_empty_type() {
+        let text = "exo test
+check test
+see hello
+// that's an error
+args
+// that's okay
+type
+";
+        assert_eq!(
+            parse_exos(text),
+            ParseResult {
+                items: vec![DYExo {
+                    name: "test".to_string(),
+                    instruction: "".to_string(),
+                    checks: vec![Check {
+                        name: "test".to_string(),
+                        args: vec![],
+                        exit: None,
+                        sequence: vec![
+                            TermAction::See("hello".to_string(),),
+                            TermAction::Type("".to_string())
+                        ],
+                    },],
+                }],
+                errors: vec![ParseError {
+                    range: range_on_line_part(4, 4, 4),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredValue("args".to_string()),
                 }]
             }
         )
