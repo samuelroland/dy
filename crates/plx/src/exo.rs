@@ -1,7 +1,7 @@
 use dy::{
     FromDYBlock, ParseResult,
-    error::ParseError,
-    parse_with_spec,
+    error::{ParseError, ParseErrorType},
+    parse_with_spec, range_on_line_part,
     semantic::Block,
     spec::{DYSpec, KeySpec, KeyType, ValidDYSpec},
 };
@@ -89,40 +89,57 @@ pub const EXO_SPEC: &KeySpec = &KeySpec {
 // even though only one course can be extracted
 pub const EXOS_SPEC: &DYSpec = &[EXO_SPEC];
 
+// Error texts
+const ERROR_CANNOT_PARSE_EXIT_CODE: &str = "Couldn't parse the given value as the program's exit code, which is an unsigned 32 bits integer.";
+
 impl<'a> FromDYBlock<'a> for DYExo {
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYExo) {
         let mut errors = Vec::new();
-        dbg!(block);
         let mut exo = DYExo::default();
         // The first line is the name, the following ones are the description
         (exo.name, exo.instruction) = block.get_text_with_joined_splits_at(1);
-        for subblock in block.subblocks.iter() {
-            let id = subblock.key.id;
+        for exo_subblock in block.subblocks.iter() {
+            let id = exo_subblock.key.id;
             if id == CHECK_SPEC.id {
-                dbg!(subblock);
-                // panic!();
                 let mut check = Check {
-                    name: subblock.get_joined_text(),
+                    name: exo_subblock.get_joined_text(),
                     ..Default::default()
                 };
-                for check_block in subblock.subblocks.iter() {
-                    let check_block_id = check_block.key.id;
-                    if check_block_id == ARGS_SPEC.id {
-                        check.args = check_block.text.iter().map(|s| s.to_string()).collect()
+                for check_subblock in exo_subblock.subblocks.iter() {
+                    let check_subblock_id = check_subblock.key.id;
+                    if check_subblock_id == ARGS_SPEC.id {
+                        check.args = check_subblock.text.iter().map(|s| s.to_string()).collect()
                     }
-                    if check_block_id == EXIT_SPEC.id {
-                        // TODO: validate exit code can be parsed if present
-                        check.exit = check_block.get_joined_text().parse::<i32>().ok()
+                    if check_subblock_id == EXIT_SPEC.id {
+                        check.exit = None;
+                        match check_subblock.get_joined_text().parse::<i32>() {
+                            Ok(code) => check.exit = Some(code),
+                            Err(_) => {
+                                errors.push(ParseError {
+                                    range: range_on_line_part(
+                                        check_subblock.range.start.line,
+                                        check_subblock.range.start.character
+                                            + check_subblock_id.len() as u32
+                                            + 1,
+                                        check_subblock.range.end.character,
+                                    ),
+                                    some_file: None,
+                                    error: ParseErrorType::ValidationError(
+                                        ERROR_CANNOT_PARSE_EXIT_CODE.to_string(),
+                                    ),
+                                });
+                            }
+                        }
                     }
-                    if check_block_id == TYPE_SPEC.id {
+                    if check_subblock_id == TYPE_SPEC.id {
                         check
                             .sequence
-                            .push(TermAction::Type(check_block.get_joined_text()));
+                            .push(TermAction::Type(check_subblock.get_joined_text()));
                     }
-                    if check_block_id == SEE_SPEC.id {
+                    if check_subblock_id == SEE_SPEC.id {
                         check
                             .sequence
-                            .push(TermAction::See(check_block.get_joined_text()));
+                            .push(TermAction::See(check_subblock.get_joined_text()));
                     }
                 }
                 exo.checks.push(check);
@@ -147,7 +164,7 @@ mod tests {
         range_on_line_part,
     };
 
-    use crate::exo::{Check, DYExo, TermAction, parse_exos};
+    use crate::exo::{Check, DYExo, ERROR_CANNOT_PARSE_EXIT_CODE, TermAction, parse_exos};
 
     use pretty_assertions::assert_eq;
 
@@ -209,6 +226,37 @@ exit 2
                     ],
                 },],
                 errors: vec![]
+            }
+        )
+    }
+
+    #[test]
+    fn test_can_error_on_invalid_exit_code() {
+        let text = "exo test
+check test
+see hello
+exit blabla
+";
+        assert_eq!(
+            parse_exos(text),
+            ParseResult {
+                items: vec![DYExo {
+                    name: "test".to_string(),
+                    instruction: "".to_string(),
+                    checks: vec![Check {
+                        name: "test".to_string(),
+                        args: vec![],
+                        exit: None,
+                        sequence: vec![TermAction::See("hello".to_string(),),],
+                    },],
+                }],
+                errors: vec![ParseError {
+                    range: range_on_line_part(3, 5, 11),
+                    some_file: None,
+                    error: ParseErrorType::ValidationError(
+                        ERROR_CANNOT_PARSE_EXIT_CODE.to_string()
+                    )
+                }]
             }
         )
     }
