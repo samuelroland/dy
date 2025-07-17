@@ -6,6 +6,7 @@ use std::iter::Peekable;
 /// starting with a key are found.
 use lsp_types::{Position, Range};
 
+use crate::range_on_line_part;
 use crate::{
     error::{ParseError, ParseErrorType},
     parser::{Line, LinePart, LineType},
@@ -129,11 +130,68 @@ pub fn build_blocks_tree<'a>(
     let (blocks, mut errors) =
         build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0, None);
 
+    check_required_constraint(&blocks, spec.get(), None, &mut errors);
+
     // TODO: that's useful for future errors generated from entities
     // is it still useful or are the errors naturally already sorted ?
     errors.sort();
 
     (blocks, errors)
+}
+
+/// Check the required constraint is respected on given blocks (only at this level)
+fn check_required_constraint(
+    blocks: &Vec<Block>,
+    specs: &DYSpec,
+    parent_range: Option<&Range>,
+    errors: &mut Vec<ParseError>,
+) {
+    let mut required_subkeys: HashSet<&str> = HashSet::from_iter(
+        specs
+            .iter()
+            .filter_map(|sk| if sk.required { Some(sk.id) } else { None }),
+    );
+
+    for block in blocks {
+        dbg!(block.key, block.get_joined_text());
+        dbg!(block.key);
+        if block.key.required {
+            required_subkeys.remove(block.key.id);
+            if block.get_joined_text().is_empty() {
+                errors.push(ParseError {
+                    // Note: the range is pointing just after the key as it's where the value need to come
+                    range: range_on_line_part(
+                        block.range.start.line,
+                        block.key.id.len() as u32,
+                        block.key.id.len() as u32,
+                    ),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredValue(block.key.id.to_string()),
+                });
+            }
+        }
+        // Checking subblocks with the subkeys specs
+        check_required_constraint(
+            &block.subblocks,
+            block.key.subkeys,
+            Some(&block.range),
+            errors,
+        );
+    }
+
+    // Every key that is required but not found with during the blocks loop, is a missing key
+    for missing_key in required_subkeys {
+        let parent_line_index = if let Some(range) = parent_range {
+            range.start.line
+        } else {
+            0
+        };
+        errors.push(ParseError {
+            range: range_on_line_with_length(parent_line_index, 0),
+            some_file: None,
+            error: ParseErrorType::MissingRequiredKey(missing_key.to_string()),
+        });
+    }
 }
 
 /// Recursive function to build a subtree of blocks
@@ -305,7 +363,7 @@ mod tests {
         semantic::{Block, build_blocks_tree},
         spec::ValidDYSpec,
     };
-    use crate::{range_on_line_with_length, range_on_lines};
+    use crate::{range_on_line_part, range_on_line_with_length, range_on_lines};
     use pretty_assertions::assert_eq;
 
     fn get_blocks<'a>(
@@ -407,11 +465,18 @@ code hey";
 
         assert_eq!(
             errors,
-            vec![ParseError {
-                range: range_on_line_with_length(0, 4),
-                some_file: None,
-                error: ParseErrorType::WrongKeyPosition("goal".to_string(), "??".to_string()) // "course".to_string())
-            }]
+            vec![
+                ParseError {
+                    range: range_on_line_with_length(0, 4),
+                    some_file: None,
+                    error: ParseErrorType::WrongKeyPosition("goal".to_string(), "??".to_string()) // "course".to_string())
+                },
+                ParseError {
+                    range: range_on_line_with_length(1, 0),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredKey("goal".to_string())
+                }
+            ]
         );
     }
 
@@ -419,6 +484,8 @@ code hey";
     #[ntest::timeout(50)]
     fn test_can_detect_duplicated_key_error() {
         let text = "course Programmation 1
+code prg1
+goal hey there
 course oups";
         let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
         let (blocks, errors) = get_blocks(&binding, text);
@@ -428,13 +495,26 @@ course oups";
                 key: COURSE_SPEC,
                 text: vec!["Programmation 1",],
                 range: range_on_line_with_length(0, 22),
-                subblocks: vec![],
+                subblocks: vec![
+                    Block {
+                        key: CODE_SPEC,
+                        text: vec!["prg1",],
+                        range: range_on_line_with_length(1, 9),
+                        subblocks: vec![],
+                    },
+                    Block {
+                        key: GOAL_SPEC,
+                        text: vec!["hey there",],
+                        range: range_on_line_with_length(2, 14),
+                        subblocks: vec![],
+                    }
+                ],
             }]
         );
         assert_eq!(
             errors,
             vec![ParseError {
-                range: range_on_line_with_length(1, 6),
+                range: range_on_line_with_length(3, 6),
                 some_file: None,
                 error: ParseErrorType::DuplicatedKey("course".to_string(), 0)
             }]
@@ -742,6 +822,11 @@ check 2
                     some_file: None,
                     error: ParseErrorType::DuplicatedKey("args".to_string(), 2),
                 },
+                ParseError {
+                    range: range_on_line_with_length(10, 0),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredKey("see".to_string()),
+                },
             ]
         );
         assert_eq!(
@@ -800,8 +885,7 @@ some code
 ~~~
 ";
         let binding = ValidDYSpec::new(TESTING_EXOS_SPEC).unwrap();
-        let (blocks, errors) = get_blocks(&binding, text);
-        assert_eq!(errors, vec![]);
+        let (blocks, _) = get_blocks(&binding, text);
         assert_eq!(
             blocks,
             vec![Block {
@@ -820,5 +904,64 @@ some code
                 subblocks: vec![],
             },]
         );
+    }
+
+    #[test]
+    fn test_missing_keys_and_values_with_required_keys_are_detected() {
+        let text = "course
+// missing code key
+goal";
+        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(
+            errors,
+            vec![
+                ParseError {
+                    range: range_on_line_with_length(0, 0),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredKey("code".to_string())
+                },
+                ParseError {
+                    range: range_on_line_part(0, 6, 6),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredValue("course".to_string())
+                },
+                ParseError {
+                    range: range_on_line_part(2, 4, 4),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredValue("goal".to_string())
+                }
+            ]
+        );
+        assert_eq!(
+            blocks,
+            vec![Block {
+                key: COURSE_SPEC,
+                text: vec!["",],
+                range: range_on_line_with_length(0, 6),
+                subblocks: vec![Block {
+                    key: GOAL_SPEC,
+                    text: vec!["",],
+                    range: range_on_line_with_length(2, 4),
+                    subblocks: vec![],
+                },],
+            },]
+        );
+    }
+
+    #[test]
+    fn test_required_key_also_work_at_root() {
+        let text = "// no course present";
+        let binding = ValidDYSpec::new(TESTING_COURSE_SPEC).unwrap();
+        let (blocks, errors) = get_blocks(&binding, text);
+        assert_eq!(
+            errors,
+            vec![ParseError {
+                range: range_on_line_with_length(0, 0),
+                some_file: None,
+                error: ParseErrorType::MissingRequiredKey("course".to_string())
+            },]
+        );
+        assert_eq!(blocks, vec![]);
     }
 }
