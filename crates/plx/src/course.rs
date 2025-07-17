@@ -17,6 +17,7 @@ pub struct DYCourse {
 
 pub const GOAL_SPEC: &KeySpec = &KeySpec {
     id: "goal",
+    desc: "The goal key describes the learning goals of this course.",
     subkeys: &[],
     kt: KeyType::Multiline,
     once: true,
@@ -24,6 +25,7 @@ pub const GOAL_SPEC: &KeySpec = &KeySpec {
 };
 pub const CODE_SPEC: &KeySpec = &KeySpec {
     id: "code",
+    desc: "The code of the course is a shorter name of the course, under 10 letters usually.",
     subkeys: &[],
     kt: KeyType::SingleLine,
     once: true,
@@ -31,6 +33,7 @@ pub const CODE_SPEC: &KeySpec = &KeySpec {
 };
 pub const COURSE_SPEC: &KeySpec = &KeySpec {
     id: "course",
+    desc: "A PLX course is grouping skills and exos related to a common set of learning goals.",
     subkeys: &[CODE_SPEC, GOAL_SPEC],
     kt: KeyType::SingleLine,
     once: true,

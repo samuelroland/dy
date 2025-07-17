@@ -15,6 +15,7 @@ struct DYSkill {
 
 pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
     id: "subskill",
+    desc: "The subskill is the same as a skill but must be more specific and focused.",
     subkeys: &[],
     kt: KeyType::Multiline,
     once: false,
@@ -22,6 +23,7 @@ pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
 };
 pub const SKILL_SPEC: &KeySpec = &KeySpec {
     id: "skill",
+    desc: "The skill is describing what students are expected to be able to do. Subskills can be used to define more specific inner skills. The first line is the skill name and following lines define the details of the skill.",
     subkeys: &[SUBSKILL_SPEC],
     kt: KeyType::Multiline,
     once: false,

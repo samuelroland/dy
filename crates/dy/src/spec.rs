@@ -6,6 +6,8 @@ use std::{collections::HashSet, fmt::Debug};
 pub struct KeySpec<'a> {
     /// The id of the key, its string representation, like "exo", "course", "code", ...
     pub id: &'a str,
+    /// The description of this key, meant to be shown by the spec documentation and the language server
+    pub desc: &'a str,
     /// The list of keys that can be defined under this keyspec that are children of the current key
     /// and that cannot be used without this parent key
     pub subkeys: &'a DYSpec<'a>,
@@ -122,6 +124,7 @@ mod tests {
             ValidDYSpec::new(&[
                 GOAL_SPEC,
                 &KeySpec {
+                    desc: "test",
                     id: "course",
                     subkeys: &[CODE_SPEC, GOAL_SPEC],
                     kt: KeyType::SingleLine,

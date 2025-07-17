@@ -9,6 +9,7 @@ pub mod tests {
 
     pub const GOAL_SPEC: &KeySpec = &KeySpec {
         id: "goal",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::Multiline,
         once: true,
@@ -16,6 +17,7 @@ pub mod tests {
     };
     pub const CODE_SPEC: &KeySpec = &KeySpec {
         id: "code",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::SingleLine,
         once: true,
@@ -23,6 +25,7 @@ pub mod tests {
     };
     pub const COURSE_SPEC: &KeySpec = &KeySpec {
         id: "course",
+        desc: "test",
         subkeys: &[CODE_SPEC, GOAL_SPEC],
         kt: KeyType::SingleLine,
         once: true,
@@ -32,6 +35,7 @@ pub mod tests {
 
     pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
         id: "subskill",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::Multiline,
         once: false,
@@ -39,6 +43,7 @@ pub mod tests {
     };
     pub const SKILL_SPEC: &KeySpec = &KeySpec {
         id: "skill",
+        desc: "test",
         subkeys: &[SUBSKILL_SPEC],
         kt: KeyType::Multiline,
         once: false,
@@ -48,6 +53,7 @@ pub mod tests {
 
     pub const ARGS_SPEC: &KeySpec = &KeySpec {
         id: "args",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::SingleLine,
         once: true,
@@ -55,6 +61,7 @@ pub mod tests {
     };
     pub const SEE_SPEC: &KeySpec = &KeySpec {
         id: "see",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::Multiline,
         once: false,
@@ -62,6 +69,7 @@ pub mod tests {
     };
     pub const TYPE_SPEC: &KeySpec = &KeySpec {
         id: "type",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::SingleLine,
         once: false,
@@ -69,6 +77,7 @@ pub mod tests {
     };
     pub const EXIT_SPEC: &KeySpec = &KeySpec {
         id: "exit",
+        desc: "test",
         subkeys: &[],
         kt: KeyType::SingleLine,
         once: true,
@@ -76,6 +85,7 @@ pub mod tests {
     };
     pub const CHECK_SPEC: &KeySpec = &KeySpec {
         id: "check",
+        desc: "test",
         subkeys: &[ARGS_SPEC, SEE_SPEC, TYPE_SPEC, EXIT_SPEC],
         kt: KeyType::SingleLine,
         once: false,
@@ -83,6 +93,7 @@ pub mod tests {
     };
     pub const EXO_SPEC: &KeySpec = &KeySpec {
         id: "exo",
+        desc: "test",
         subkeys: &[CHECK_SPEC],
         kt: KeyType::Multiline,
         once: true, // for now, only one exo per file
