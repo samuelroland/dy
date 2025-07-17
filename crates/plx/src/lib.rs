@@ -12,5 +12,6 @@ pub use exo::parse_exos;
 pub use skill::parse_skills;
 
 // The PLX spec define that course file can only be described inside a `course.dy` and that skills only inside a `skills.dy`
-const COURSE_FILE: &str = "course.dy";
-const SKILLS_FILE: &str = "skills.dy";
+pub const COURSE_FILE: &str = "course.dy";
+pub const SKILLS_FILE: &str = "skills.dy";
+pub const EXO_FILE: &str = "exo.dy";
