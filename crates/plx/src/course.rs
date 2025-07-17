@@ -9,10 +9,10 @@ use dy::{
 
 #[derive(Default, Debug, PartialEq)]
 pub struct DYCourse {
-    name: String,
-    instruction: String,
-    code: String,
-    goal: String,
+    pub name: String,
+    pub instruction: String,
+    pub code: String,
+    pub goal: String,
 }
 
 pub const GOAL_SPEC: &KeySpec = &KeySpec {

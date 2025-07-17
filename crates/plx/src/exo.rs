@@ -8,7 +8,7 @@ use dy::{
 
 /// This describes the automation of an action that would normally be done manually in the terminal
 #[derive(Debug, PartialEq)]
-enum TermAction {
+pub enum TermAction {
     /// Make sure there is the given string in the program stdout. It doesn't need to be exact.
     /// This string is trimed itself to avoid any missing invisible space causing check failure
     See(String),
@@ -18,14 +18,14 @@ enum TermAction {
 }
 
 #[derive(Default, Debug, PartialEq)]
-struct Check {
-    name: String,
+pub struct Check {
+    pub name: String,
     /// The argument to pass to exo program when executing it
-    args: Vec<String>,
+    pub args: Vec<String>,
     /// The expected exit code of the exo program
-    exit: Option<i32>, // why i32 ? because std::process::ExitStatus::code() -> Option<i32>
+    pub exit: Option<i32>, // why i32 ? because std::process::ExitStatus::code() -> Option<i32>
     /// The test sequence containing assertions to verify the behavior of the exo program
-    sequence: Vec<TermAction>,
+    pub sequence: Vec<TermAction>,
 }
 
 #[derive(Default, Debug, PartialEq)]

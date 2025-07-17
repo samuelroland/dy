@@ -7,10 +7,10 @@ use dy::{
 };
 
 #[derive(Default, Debug, PartialEq)]
-struct DYSkill {
-    name: String,
-    description: String,
-    subskills: Vec<DYSkill>,
+pub struct DYSkill {
+    pub name: String,
+    pub description: String,
+    pub subskills: Vec<DYSkill>,
 }
 
 pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
@@ -49,7 +49,7 @@ impl<'a> FromDYBlock<'a> for DYSkill {
     }
 }
 
-fn parse_skills(content: &str) -> ParseResult<DYSkill> {
+pub fn parse_skills(content: &str) -> ParseResult<DYSkill> {
     parse_with_spec(
         &ValidDYSpec::new(SKILLS_SPEC).expect("TESTING_SKILLS_SPEC is invalid !"),
         content,
