@@ -1,5 +1,5 @@
 /// The parser is responsible of the syntax analysis by cutting the content into lines, and lines into parts
-use crate::spec::{all_valid_keys, KeySpec, ValidDYSpec};
+use crate::spec::{KeySpec, ValidDYSpec, all_valid_keys};
 use std::collections::HashMap;
 
 pub const COMMENT_PREFIX: &str = "//";
@@ -124,7 +124,7 @@ mod tests {
         common::tests::{
             CODE_SPEC, COURSE_SPEC, EXO_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC, TESTING_EXOS_SPEC,
         },
-        parser::{line_starts_with_key, tokenize_into_lines, Line, LinePart, LineType},
+        parser::{Line, LinePart, LineType, line_starts_with_key, tokenize_into_lines},
         spec::ValidDYSpec,
     };
     use pretty_assertions::assert_eq;

@@ -34,7 +34,6 @@ pub const SKILLS_SPEC: &DYSpec = &[SKILL_SPEC];
 impl<'a> FromDYBlock<'a> for DYSkill {
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYSkill) {
         let mut errors = Vec::new();
-        dbg!(block);
         let mut skill = DYSkill::default();
         // The first line is the name, the following ones are the description
         (skill.name, skill.description) = block.get_text_with_joined_splits_at(1);

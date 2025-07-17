@@ -153,8 +153,6 @@ fn check_required_constraint(
     );
 
     for block in blocks {
-        dbg!(block.key, block.get_joined_text());
-        dbg!(block.key);
         if block.key.required {
             required_subkeys.remove(block.key.id);
             if block.get_joined_text().is_empty() {
