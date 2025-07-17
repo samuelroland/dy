@@ -201,10 +201,6 @@ fn build_blocks_subtree_recursive<'a>(
     level: u8,
     parent_spec: Option<&KeySpec>,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
-    eprintln!(
-        "\n>> build_blocks_subtree_recursive: line: {:?}, specs: {specs:?}, level {level}",
-        lines.peek()
-    );
     let mut errors: Vec<ParseError> = Vec::new();
     let mut blocks: Vec<Block> = Vec::new();
     let mut blocks_starting_line_indexes: Vec<usize> = Vec::new();
@@ -212,11 +208,7 @@ fn build_blocks_subtree_recursive<'a>(
     while let Some(line) = lines.peek() {
         match line.lt {
             LineType::WithKey(associated_spec) => {
-                eprintln!(
-                    "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
-                );
                 if specs.iter().any(|s| s.id == associated_spec.id) {
-                    // eprintln!("Found {}", associated_spec.id);
                     // Build the new block as it is valid
                     let parts = line.tokenize_parts();
                     let text = parts
@@ -238,14 +230,12 @@ fn build_blocks_subtree_recursive<'a>(
                         ),
                         subblocks: vec![],
                     };
-                    eprintln!("New block: {new_block:?}");
                     blocks.push(new_block);
                     blocks_starting_line_indexes.push(line.index);
 
                     // The line was valid, we can move to the next line
                     lines.next();
                 } else if level == 0 {
-                    eprintln!("Found WrongKeyPosition !");
                     errors.push(ParseError {
                         range: range_on_line_with_length(
                             line.index as u32,
@@ -259,19 +249,16 @@ fn build_blocks_subtree_recursive<'a>(
                     });
                     lines.next();
                 } else {
-                    eprintln!("No found at this level, going up\n");
                     break; // break the while, so we return from this function
                 }
             }
             LineType::Comment => {
-                eprintln!("SKipping comment: {}!", line.slice);
                 lines.next();
             }
             LineType::Unknown => {
                 if let Some(existing_block) = blocks.last_mut() {
                     if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
                         if !line.slice.trim().is_empty() {
-                            eprintln!("Found InvalidMultilineContent on line: {}", line.slice);
                             errors.push(ParseError {
                                 range: range_on_line_with_length(
                                     line.index as u32,
@@ -287,8 +274,7 @@ fn build_blocks_subtree_recursive<'a>(
                         existing_block.push_text(line.slice, line.index);
                     }
                 } else if !line.slice.trim().is_empty() {
-                    eprintln!("Found ContentOutOfKey on line: {}", line.slice);
-                    // non empty lines without an existing block are ContentOutOfKey
+                    // Non empty lines without an existing block are ContentOutOfKey
                     errors.push(ParseError {
                         range: range_on_line_with_length(
                             line.index as u32,
