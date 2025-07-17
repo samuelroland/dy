@@ -90,7 +90,8 @@ pub const EXO_SPEC: &KeySpec = &KeySpec {
 pub const EXOS_SPEC: &DYSpec = &[EXO_SPEC];
 
 impl<'a> FromDYBlock<'a> for DYExo {
-    fn from_block(block: &Block<'a>) -> DYExo {
+    fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYExo) {
+        let mut errors = Vec::new();
         dbg!(block);
         let mut exo = DYExo::default();
         // The first line is the name, the following ones are the description
@@ -127,12 +128,7 @@ impl<'a> FromDYBlock<'a> for DYExo {
                 exo.checks.push(check);
             }
         }
-        exo
-    }
-
-    fn validate(&self) -> Vec<ParseError> {
-        let mut errors = Vec::new();
-        errors
+        (errors, exo)
     }
 }
 
@@ -145,7 +141,11 @@ pub fn parse_exos(content: &str) -> ParseResult<DYExo> {
 
 #[cfg(test)]
 mod tests {
-    use dy::ParseResult;
+    use dy::{
+        ParseResult,
+        error::{ParseError, ParseErrorType},
+        range_on_line_part,
+    };
 
     use crate::exo::{Check, DYExo, TermAction, parse_exos};
 

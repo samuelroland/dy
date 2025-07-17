@@ -20,8 +20,7 @@ pub struct ParseResult<T> {
 
 /// Make sure we can create this type from a Block and validate it's content once created
 pub trait FromDYBlock<'a> {
-    fn from_block(block: &Block<'a>) -> Self;
-    fn validate(&self) -> Vec<ParseError>;
+    fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, Self);
 }
 
 /// Given a ValidDYSpec and a content, generate a ParseResult with all the items of type T that
@@ -37,8 +36,8 @@ where
     let mut items: Vec<T> = Vec::with_capacity(blocks.len());
 
     for block in blocks {
-        let entity = T::from_block(&block);
-        errors.extend(entity.validate());
+        let (new_errors, entity) = T::from_block_with_validation(&block);
+        errors.extend(new_errors);
         items.push(entity);
     }
 

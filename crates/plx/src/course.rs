@@ -44,7 +44,8 @@ pub const COURSE_SPEC: &KeySpec = &KeySpec {
 pub const COURSES_SPEC: &DYSpec = &[COURSE_SPEC];
 
 impl<'a> FromDYBlock<'a> for DYCourse {
-    fn from_block(block: &Block<'a>) -> DYCourse {
+    fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYCourse) {
+        let mut errors = Vec::new();
         let mut course = DYCourse {
             name: block.get_joined_text(),
             ..Default::default()
@@ -59,12 +60,7 @@ impl<'a> FromDYBlock<'a> for DYCourse {
                 course.goal = subblock.text.join("\n");
             }
         }
-        course
-    }
-
-    fn validate(&self) -> Vec<ParseError> {
-        let mut errors = Vec::new();
-        errors
+        (errors, course)
     }
 }
 

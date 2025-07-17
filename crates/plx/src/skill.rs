@@ -23,7 +23,7 @@ pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
 };
 pub const SKILL_SPEC: &KeySpec = &KeySpec {
     id: "skill",
-    desc: "The skill is describing what students are expected to be able to do. Subskills can be used to define more specific inner skills. The first line is the skill name and following lines define the details of the skill.",
+    desc: "The skill is describing what students are expected to be able to do. Subskills can be used to define more specific inner skills.\nThe first line is the skill name and following lines define the details of the skill.",
     subkeys: &[SUBSKILL_SPEC],
     kt: KeyType::Multiline,
     once: false,
@@ -32,7 +32,8 @@ pub const SKILL_SPEC: &KeySpec = &KeySpec {
 pub const SKILLS_SPEC: &DYSpec = &[SKILL_SPEC];
 
 impl<'a> FromDYBlock<'a> for DYSkill {
-    fn from_block(block: &Block<'a>) -> DYSkill {
+    fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYSkill) {
+        let mut errors = Vec::new();
         dbg!(block);
         let mut skill = DYSkill::default();
         // The first line is the name, the following ones are the description
@@ -40,15 +41,12 @@ impl<'a> FromDYBlock<'a> for DYSkill {
         for subblock in block.subblocks.iter() {
             let id = subblock.key.id;
             if id == SUBSKILL_SPEC.id {
-                skill.subskills.push(DYSkill::from_block(subblock))
+                let (suberrors, subentity) = DYSkill::from_block_with_validation(subblock);
+                skill.subskills.push(subentity);
+                errors.extend(suberrors);
             }
         }
-        skill
-    }
-
-    fn validate(&self) -> Vec<ParseError> {
-        let mut errors = Vec::new();
-        errors
+        (errors, skill)
     }
 }
 
