@@ -30,9 +30,9 @@ pub struct Check {
 
 #[derive(Default, Debug, PartialEq)]
 pub struct DYExo {
-    name: String,
-    instruction: String,
-    checks: Vec<Check>,
+    pub name: String,
+    pub instruction: String,
+    pub checks: Vec<Check>,
 }
 
 pub const ARGS_SPEC: &KeySpec = &KeySpec {
