@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
 use lsp_types::Range;
+use serde::{Deserialize, Serialize};
 
 use crate::parser::COMMENT_PREFIX;
 
-#[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, thiserror::Error, Clone, Eq, PartialEq)]
 pub enum ParseErrorType {
     // Blocks tree building errors
     #[error("The '{0}' key can be only used under a `{1}`")]
