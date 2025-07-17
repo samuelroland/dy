@@ -6,6 +6,7 @@ use crate::parser::COMMENT_PREFIX;
 
 #[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
 pub enum ParseErrorType {
+    // Blocks tree building errors
     #[error("The '{0}' key can be only used under a `{1}`")]
     WrongKeyPosition(String, String),
     #[error("The '{0}' key can only be used once {level}", level = if *.1 == 0 {"in document root"} else {"at this level"})]
@@ -17,6 +18,10 @@ pub enum ParseErrorType {
         COMMENT_PREFIX
     )]
     ContentOutOfKey,
+    #[error("Missing required key '{0}'")]
+    MissingRequiredKey(String),
+    #[error("Missing a value for the required key '{0}'")]
+    MissingRequiredValue(String),
 }
 
 /// Implement ordering to sort errors by range start position.

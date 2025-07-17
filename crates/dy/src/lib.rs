@@ -67,3 +67,16 @@ pub fn range_on_lines(line: u32, line2: u32, length: u32) -> Range {
         },
     }
 }
+
+pub fn range_on_line_part(line: u32, start: u32, end: u32) -> Range {
+    Range {
+        start: Position {
+            line,
+            character: start,
+        },
+        end: Position {
+            line,
+            character: end,
+        },
+    }
+}
