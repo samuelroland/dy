@@ -20,18 +20,21 @@ pub const GOAL_SPEC: &KeySpec = &KeySpec {
     subkeys: &[],
     kt: KeyType::Multiline,
     once: true,
+    required: true,
 };
 pub const CODE_SPEC: &KeySpec = &KeySpec {
     id: "code",
     subkeys: &[],
     kt: KeyType::SingleLine,
     once: true,
+    required: true,
 };
 pub const COURSE_SPEC: &KeySpec = &KeySpec {
     id: "course",
     subkeys: &[CODE_SPEC, GOAL_SPEC],
     kt: KeyType::SingleLine,
     once: true,
+    required: true,
 };
 // Note: to avoid double definition of COURSE_SPEC we use the plural form
 // even though only one course can be extracted

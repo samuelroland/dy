@@ -40,37 +40,46 @@ pub const ARGS_SPEC: &KeySpec = &KeySpec {
     subkeys: &[],
     kt: KeyType::SingleLine,
     once: true,
+    required: false,
 };
 pub const SEE_SPEC: &KeySpec = &KeySpec {
     id: "see",
     subkeys: &[],
     kt: KeyType::Multiline,
     once: false,
+    required: true,
 };
 pub const TYPE_SPEC: &KeySpec = &KeySpec {
     id: "type",
     subkeys: &[],
     kt: KeyType::SingleLine, // we can only type a single line of text
     once: false,
+    required: false,
 };
 pub const EXIT_SPEC: &KeySpec = &KeySpec {
     id: "exit",
     subkeys: &[],
     kt: KeyType::SingleLine,
     once: true,
+    required: false,
 };
 pub const CHECK_SPEC: &KeySpec = &KeySpec {
     id: "check",
     subkeys: &[ARGS_SPEC, SEE_SPEC, TYPE_SPEC, EXIT_SPEC],
     kt: KeyType::SingleLine,
     once: false,
+    required: true,
 };
 pub const EXO_SPEC: &KeySpec = &KeySpec {
     id: "exo",
     subkeys: &[CHECK_SPEC],
     kt: KeyType::Multiline,
     once: true, // for now, only one exo per file
+    required: true,
 };
+
+// Note: to avoid double definition of EXO_SPEC we use the plural form
+// even though only one course can be extracted
 pub const EXOS_SPEC: &DYSpec = &[EXO_SPEC];
 
 impl<'a> FromDYBlock<'a> for DYExo {

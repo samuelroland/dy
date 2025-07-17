@@ -18,12 +18,14 @@ pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
     subkeys: &[],
     kt: KeyType::Multiline,
     once: false,
+    required: false,
 };
 pub const SKILL_SPEC: &KeySpec = &KeySpec {
     id: "skill",
     subkeys: &[SUBSKILL_SPEC],
     kt: KeyType::Multiline,
     once: false,
+    required: true,
 };
 pub const SKILLS_SPEC: &DYSpec = &[SKILL_SPEC];
 

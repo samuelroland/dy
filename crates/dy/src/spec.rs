@@ -19,6 +19,9 @@ pub struct KeySpec<'a> {
     /// once. For a check, the `type` key is totally okay since we want to type different things
     /// as the sequence of the check.
     pub once: bool,
+    /// Whether this key is required to be present and have non empty value
+    /// It that's not the case, it will generate MissingRequiredValue
+    pub required: bool,
 }
 
 impl<'a> Debug for KeySpec<'a> {
@@ -106,23 +109,28 @@ mod tests {
 
     #[test]
     fn test_spec_with_duplicated_key_at_root() {
-        assert!(ValidDYSpec::new(&[CODE_SPEC, GOAL_SPEC, CODE_SPEC])
-            .unwrap_err()
-            .contains("Duplicated key identifier 'code'"));
+        assert!(
+            ValidDYSpec::new(&[CODE_SPEC, GOAL_SPEC, CODE_SPEC])
+                .unwrap_err()
+                .contains("Duplicated key identifier 'code'")
+        );
     }
 
     #[test]
     fn test_spec_with_duplicated_key_deeply() {
-        assert!(ValidDYSpec::new(&[
-            GOAL_SPEC,
-            &KeySpec {
-                id: "course",
-                subkeys: &[CODE_SPEC, GOAL_SPEC],
-                kt: KeyType::SingleLine,
-                once: true,
-            }
-        ])
-        .unwrap_err()
-        .contains("Duplicated key identifier 'goal'"));
+        assert!(
+            ValidDYSpec::new(&[
+                GOAL_SPEC,
+                &KeySpec {
+                    id: "course",
+                    subkeys: &[CODE_SPEC, GOAL_SPEC],
+                    kt: KeyType::SingleLine,
+                    once: true,
+                    required: true,
+                }
+            ])
+            .unwrap_err()
+            .contains("Duplicated key identifier 'goal'")
+        );
     }
 }
