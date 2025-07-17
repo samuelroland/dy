@@ -13,7 +13,6 @@ pub struct KeySpec<'a> {
     pub subkeys: &'a DYSpec<'a>,
     /// The type of this key, impacting the way
     pub vt: ValueType,
-
     /// Whether this key is only permitted once for its parent object
     ///
     /// For example, in PLX the `course` key is only acceptable once in a `course.dy` file as we only want
@@ -21,8 +20,9 @@ pub struct KeySpec<'a> {
     /// once. For a check, the `type` key is totally okay since we want to type different things
     /// as the sequence of the check.
     pub once: bool,
-    /// Whether this key is required to be present and have non empty value
-    /// It that's not the case, it will generate MissingRequiredValue
+    /// If required is true, it makes sure there is at least one instance of this key everytime
+    /// there is place for this key to exist, and it also make sure the values is not empty.
+    /// It can generate MissingRequiredKey and MissingRequiredValue errors
     pub required: bool,
 }
 

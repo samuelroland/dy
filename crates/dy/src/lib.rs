@@ -11,6 +11,9 @@ pub mod spec;
 
 mod common;
 
+// DY files must be stored inside something.dy
+pub const FILE_EXTENSION: &str = "dy";
+
 /// The result of a parsing, with the vector of items and potentially some errors
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseResult<T> {
