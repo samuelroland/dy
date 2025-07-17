@@ -10,9 +10,21 @@ use dy::{
 pub struct DYSkill {
     pub name: String,
     pub description: String,
+    /// the directory where associated exos are stored, the existance of this directory cannot be checked by the parser as it doesn't touch the file system !
+    pub directory: String,
+    /// Note: subskills are not supported by PLX at the moment, they are just ignored
     pub subskills: Vec<DYSkill>,
 }
-
+pub const DIR_SPEC: &KeySpec = &KeySpec {
+    id: "dir",
+    desc: "The directory where exos of this skill are stored. This directory must be unique among listed skills.",
+    subkeys: &[],
+    vt: ValueType::SingleLine,
+    once: true,
+    required: true,
+};
+// TODO: how to support dir also for subskill ? this is detected as a duplicated keyspec !
+// For now, PLX doesn't support subskills so we will just ignore them when converting DYSkill to Skill
 pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
     id: "subskill",
     desc: "The subskill is the same as a skill but must be more specific and focused.",
@@ -24,7 +36,7 @@ pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
 pub const SKILL_SPEC: &KeySpec = &KeySpec {
     id: "skill",
     desc: "The skill is describing what students are expected to be able to do. Subskills can be used to define more specific inner skills.\nThe first line is the skill name and following lines define the details of the skill.",
-    subkeys: &[SUBSKILL_SPEC],
+    subkeys: &[SUBSKILL_SPEC, DIR_SPEC],
     vt: ValueType::Multiline,
     once: false,
     required: true,
@@ -37,8 +49,12 @@ impl<'a> FromDYBlock<'a> for DYSkill {
         let mut skill = DYSkill::default();
         // The first line is the name, the following ones are the description
         (skill.name, skill.description) = block.get_text_with_joined_splits_at(1);
+
         for subblock in block.subblocks.iter() {
             let id = subblock.key.id;
+            if id == DIR_SPEC.id {
+                skill.directory = subblock.get_joined_text()
+            }
             if id == SUBSKILL_SPEC.id {
                 // Make sure subskill value is not empty
                 if subblock.get_joined_text().is_empty() {
@@ -86,11 +102,13 @@ mod tests {
         let text = "
 // Great skills list
 skill Classes
+dir classes
 
 skill Opérateurs
 Maitriser l'usage de **tous les opérateurs utiles**, pour manipuler
 des nombres, des bits, ou encore des flux. Redéfinir les opérateurs
 existants pour nos classes.
+dir ops
 subskill Calculs simples
 Juste des calculs de math !
 
@@ -107,35 +125,42 @@ subskill Redéfinition d'opérateurs
         items: vec![
             DYSkill {
                 name: "Classes".to_string(),
+                directory: "classes".to_string(),
                 description: "".to_string(),
                 subskills: vec![],
             },
             DYSkill {
                 name: "Opérateurs".to_string(),
+                directory: "ops".to_string(),
                 description: "Maitriser l'usage de **tous les opérateurs utiles**, pour manipuler\ndes nombres, des bits, ou encore des flux. Redéfinir les opérateurs\nexistants pour nos classes.".to_string(),
                 subskills: vec![
                     DYSkill {
                         name: "Calculs simples".to_string(),
+                        directory: "".to_string(),
                         description: "Juste des calculs de math !".to_string(),
                         subskills: vec![],
                     },
                     DYSkill {
                         name: "Calculs avancés et précision".to_string(),
+                        directory: "".to_string(),
                         description: "".to_string(),
                         subskills: vec![],
                     },
                     DYSkill {
                         name: "Opérateurs de flux".to_string(),
+                        directory: "".to_string(),
                         description: "".to_string(),
                         subskills: vec![],
                     },
                     DYSkill {
                         name: "Manipulation de bits".to_string(),
+                        directory: "".to_string(),
                         description: "".to_string(),
                         subskills: vec![],
                     },
                     DYSkill {
                         name: "Redéfinition d'opérateurs".to_string(),
+                        directory: "".to_string(),
                         description: "".to_string(),
                         subskills: vec![],
                     },
@@ -151,6 +176,7 @@ subskill Redéfinition d'opérateurs
     fn test_can_detect_subskill_missing_value() {
         let text = "skill A
 great desc
+dir a
 subskill
 
 
@@ -160,15 +186,17 @@ subskill
             ParseResult {
                 items: vec![DYSkill {
                     name: "A".to_string(),
+                    directory: "a".to_string(),
                     description: "great desc".to_string(),
                     subskills: vec![DYSkill {
                         name: "".to_string(),
+                        directory: "".to_string(),
                         description: "".to_string(),
                         subskills: vec![],
                     }],
                 }],
                 errors: vec![ParseError {
-                    range: range_on_line_part(2, 8, 8),
+                    range: range_on_line_part(3, 8, 8),
                     some_file: None,
                     error: ParseErrorType::MissingRequiredValue("subskill".to_string()),
                 }]
