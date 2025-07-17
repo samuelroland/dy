@@ -114,8 +114,8 @@ impl<'a> FromDYBlock<'a> for DYExo {
                                 // Note: the range is pointing just after the key as it's where the value need to come
                                 range: range_on_line_part(
                                     check_subblock.range.start.line,
-                                    check_subblock_id.len() as u32,
-                                    check_subblock_id.len() as u32,
+                                    ARGS_SPEC.id.len() as u32,
+                                    ARGS_SPEC.id.len() as u32,
                                 ),
                                 some_file: None,
                                 error: ParseErrorType::MissingRequiredValue(

@@ -1,7 +1,7 @@
 use dy::{
     FromDYBlock, ParseResult,
-    error::ParseError,
-    parse_with_spec,
+    error::{ParseError, ParseErrorType},
+    parse_with_spec, range_on_line_part,
     semantic::Block,
     spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
@@ -40,6 +40,19 @@ impl<'a> FromDYBlock<'a> for DYSkill {
         for subblock in block.subblocks.iter() {
             let id = subblock.key.id;
             if id == SUBSKILL_SPEC.id {
+                // Make sure subskill value is not empty
+                if subblock.get_joined_text().is_empty() {
+                    errors.push(ParseError {
+                        range: range_on_line_part(
+                            subblock.range.start.line,
+                            SUBSKILL_SPEC.id.len() as u32,
+                            SUBSKILL_SPEC.id.len() as u32,
+                        ),
+                        some_file: None,
+                        error: ParseErrorType::MissingRequiredValue(SUBSKILL_SPEC.id.to_string()),
+                    });
+                }
+
                 let (suberrors, subentity) = DYSkill::from_block_with_validation(subblock);
                 skill.subskills.push(subentity);
                 errors.extend(suberrors);
@@ -58,7 +71,11 @@ pub fn parse_skills(content: &str) -> ParseResult<DYSkill> {
 
 #[cfg(test)]
 mod tests {
-    use dy::ParseResult;
+    use dy::{
+        ParseResult,
+        error::{ParseError, ParseErrorType},
+        range_on_line_part,
+    };
 
     use crate::skill::{DYSkill, parse_skills};
 
@@ -126,6 +143,35 @@ subskill Redéfinition d'opérateurs
             },
         ],
                 errors: vec![]
+            }
+        )
+    }
+
+    #[test]
+    fn test_can_detect_subskill_missing_value() {
+        let text = "skill A
+great desc
+subskill
+
+
+";
+        assert_eq!(
+            parse_skills(text),
+            ParseResult {
+                items: vec![DYSkill {
+                    name: "A".to_string(),
+                    description: "great desc".to_string(),
+                    subskills: vec![DYSkill {
+                        name: "".to_string(),
+                        description: "".to_string(),
+                        subskills: vec![],
+                    }],
+                }],
+                errors: vec![ParseError {
+                    range: range_on_line_part(2, 8, 8),
+                    some_file: None,
+                    error: ParseErrorType::MissingRequiredValue("subskill".to_string()),
+                }]
             }
         )
     }
