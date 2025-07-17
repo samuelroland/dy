@@ -255,7 +255,7 @@ fn build_blocks_subtree_recursive<'a>(
             }
             LineType::Unknown => {
                 if let Some(existing_block) = blocks.last_mut() {
-                    if matches!(existing_block.key.kt, crate::spec::KeyType::SingleLine) {
+                    if matches!(existing_block.key.vt, crate::spec::ValueType::SingleLine) {
                         if !line.slice.trim().is_empty() {
                             errors.push(ParseError {
                                 range: range_on_line_with_length(

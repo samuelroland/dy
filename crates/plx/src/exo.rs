@@ -3,7 +3,7 @@ use dy::{
     error::{ParseError, ParseErrorType},
     parse_with_spec, range_on_line_part,
     semantic::Block,
-    spec::{DYSpec, KeySpec, KeyType, ValidDYSpec},
+    spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
 
 /// This describes the automation of an action that would normally be done manually in the terminal
@@ -40,7 +40,7 @@ pub const ARGS_SPEC: &KeySpec = &KeySpec {
     desc: "The command line arguments passed to the exo program, the space is used to split the list of arguments. No quotes or space inside argument is supported at the moment.",
     // TODO: support a way to have arguments with space !
     subkeys: &[],
-    kt: KeyType::SingleLine,
+    vt: ValueType::SingleLine,
     once: true,
     required: false,
 };
@@ -48,7 +48,7 @@ pub const SEE_SPEC: &KeySpec = &KeySpec {
     id: "see",
     desc: "The `see` assertion asserts that the standard output of the exo program contains the given text. Values around that text are permitted.",
     subkeys: &[],
-    kt: KeyType::Multiline,
+    vt: ValueType::Multiline,
     once: false,
     required: true,
 };
@@ -56,7 +56,7 @@ pub const TYPE_SPEC: &KeySpec = &KeySpec {
     id: "type",
     desc: "The `type` action simulate typing in the terminal and hitting enter. It inject the given text in the standard input at once after appending a `\\n` at the end of the text.",
     subkeys: &[],
-    kt: KeyType::SingleLine, // we can only type a single line of text
+    vt: ValueType::SingleLine, // we can only type a single line of text
     once: false,
     required: false,
 };
@@ -64,7 +64,7 @@ pub const EXIT_SPEC: &KeySpec = &KeySpec {
     desc: "Assert the value of the exit code (also named exit status). By default, this is checked to be 0, you can define another value to assert the program has failed with a specific exit code.",
     id: "exit",
     subkeys: &[],
-    kt: KeyType::SingleLine,
+    vt: ValueType::SingleLine,
     once: true,
     required: false,
 };
@@ -72,7 +72,7 @@ pub const CHECK_SPEC: &KeySpec = &KeySpec {
     id: "check",
     desc: "Describe a `check`, which is a basic automated test.",
     subkeys: &[ARGS_SPEC, SEE_SPEC, TYPE_SPEC, EXIT_SPEC],
-    kt: KeyType::SingleLine,
+    vt: ValueType::SingleLine,
     once: false,
     required: true,
 };
@@ -80,7 +80,7 @@ pub const EXO_SPEC: &KeySpec = &KeySpec {
     id: "exo",
     desc: "Define a new exercise (exo is shortcut for exercise) with a name and optionnal instruction.",
     subkeys: &[CHECK_SPEC],
-    kt: KeyType::Multiline,
+    vt: ValueType::Multiline,
     once: true, // for now, only one exo per file
     required: true,
 };

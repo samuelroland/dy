@@ -12,7 +12,7 @@ pub struct KeySpec<'a> {
     /// and that cannot be used without this parent key
     pub subkeys: &'a DYSpec<'a>,
     /// The type of this key, impacting the way
-    pub kt: KeyType,
+    pub vt: ValueType,
 
     /// Whether this key is only permitted once for its parent object
     ///
@@ -39,7 +39,7 @@ impl<'a> KeySpec<'a> {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub enum KeyType {
+pub enum ValueType {
     SingleLine,
     Multiline,
 }
@@ -94,7 +94,7 @@ impl<'a> ValidDYSpec<'a> {
 #[cfg(test)]
 mod tests {
     use crate::common::tests::{CODE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC};
-    use crate::spec::{KeySpec, KeyType, ValidDYSpec};
+    use crate::spec::{KeySpec, ValidDYSpec, ValueType};
 
     #[test]
     fn test_can_validate_valid_spec() {
@@ -127,7 +127,7 @@ mod tests {
                     desc: "test",
                     id: "course",
                     subkeys: &[CODE_SPEC, GOAL_SPEC],
-                    kt: KeyType::SingleLine,
+                    vt: ValueType::SingleLine,
                     once: true,
                     required: true,
                 }

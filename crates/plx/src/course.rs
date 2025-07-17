@@ -4,7 +4,7 @@ use dy::{
     error::ParseError,
     parse_with_spec,
     semantic::Block,
-    spec::{DYSpec, KeySpec, KeyType, ValidDYSpec},
+    spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
 
 #[derive(Default, Debug, PartialEq)]
@@ -19,7 +19,7 @@ pub const GOAL_SPEC: &KeySpec = &KeySpec {
     id: "goal",
     desc: "The goal key describes the learning goals of this course.",
     subkeys: &[],
-    kt: KeyType::Multiline,
+    vt: ValueType::Multiline,
     once: true,
     required: true,
 };
@@ -27,7 +27,7 @@ pub const CODE_SPEC: &KeySpec = &KeySpec {
     id: "code",
     desc: "The code of the course is a shorter name of the course, under 10 letters usually.",
     subkeys: &[],
-    kt: KeyType::SingleLine,
+    vt: ValueType::SingleLine,
     once: true,
     required: true,
 };
@@ -35,7 +35,7 @@ pub const COURSE_SPEC: &KeySpec = &KeySpec {
     id: "course",
     desc: "A PLX course is grouping skills and exos related to a common set of learning goals.",
     subkeys: &[CODE_SPEC, GOAL_SPEC],
-    kt: KeyType::SingleLine,
+    vt: ValueType::SingleLine,
     once: true,
     required: true,
 };

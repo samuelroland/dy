@@ -5,13 +5,13 @@
 /// It doesn't mean it's up-to-date with the PLX spec though... There is no need to keep it up-to-date.
 #[cfg(test)]
 pub mod tests {
-    use crate::spec::{DYSpec, KeySpec, KeyType};
+    use crate::spec::{DYSpec, KeySpec, ValueType};
 
     pub const GOAL_SPEC: &KeySpec = &KeySpec {
         id: "goal",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::Multiline,
+        vt: ValueType::Multiline,
         once: true,
         required: true,
     };
@@ -19,7 +19,7 @@ pub mod tests {
         id: "code",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::SingleLine,
+        vt: ValueType::SingleLine,
         once: true,
         required: true,
     };
@@ -27,7 +27,7 @@ pub mod tests {
         id: "course",
         desc: "test",
         subkeys: &[CODE_SPEC, GOAL_SPEC],
-        kt: KeyType::SingleLine,
+        vt: ValueType::SingleLine,
         once: true,
         required: true,
     };
@@ -37,7 +37,7 @@ pub mod tests {
         id: "subskill",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::Multiline,
+        vt: ValueType::Multiline,
         once: false,
         required: false,
     };
@@ -45,7 +45,7 @@ pub mod tests {
         id: "skill",
         desc: "test",
         subkeys: &[SUBSKILL_SPEC],
-        kt: KeyType::Multiline,
+        vt: ValueType::Multiline,
         once: false,
         required: true,
     };
@@ -55,7 +55,7 @@ pub mod tests {
         id: "args",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::SingleLine,
+        vt: ValueType::SingleLine,
         once: true,
         required: false,
     };
@@ -63,7 +63,7 @@ pub mod tests {
         id: "see",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::Multiline,
+        vt: ValueType::Multiline,
         once: false,
         required: true,
     };
@@ -71,7 +71,7 @@ pub mod tests {
         id: "type",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::SingleLine,
+        vt: ValueType::SingleLine,
         once: false,
         required: false,
     };
@@ -79,7 +79,7 @@ pub mod tests {
         id: "exit",
         desc: "test",
         subkeys: &[],
-        kt: KeyType::SingleLine,
+        vt: ValueType::SingleLine,
         once: true,
         required: false,
     };
@@ -87,7 +87,7 @@ pub mod tests {
         id: "check",
         desc: "test",
         subkeys: &[ARGS_SPEC, SEE_SPEC, TYPE_SPEC, EXIT_SPEC],
-        kt: KeyType::SingleLine,
+        vt: ValueType::SingleLine,
         once: false,
         required: true,
     };
@@ -95,7 +95,7 @@ pub mod tests {
         id: "exo",
         desc: "test",
         subkeys: &[CHECK_SPEC],
-        kt: KeyType::Multiline,
+        vt: ValueType::Multiline,
         once: true, // for now, only one exo per file
         required: true,
     };
