@@ -9,6 +9,7 @@ use lsp_types::{Position, Range};
 use crate::{
     error::{ParseError, ParseErrorType},
     parser::{Line, LinePart, LineType},
+    range_on_line_with_length,
     spec::{DYSpec, KeySpec, ValidDYSpec},
 };
 
@@ -154,8 +155,8 @@ fn build_blocks_subtree_recursive<'a>(
         match line.lt {
             LineType::WithKey(associated_spec) => {
                 eprintln!(
-                        "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
-                    );
+                    "Checking if {associated_spec:?} is present inside specs list {specs:?} with level {level}"
+                );
                 if specs.iter().any(|s| s.id == associated_spec.id) {
                     // eprintln!("Found {}", associated_spec.id);
                     // Build the new block as it is valid
@@ -290,27 +291,6 @@ fn build_blocks_subtree_recursive<'a>(
     (non_duplicated_blocks, errors)
 }
 
-/// Util function to create a new range on a single line, at given line index, from position 0 to given length
-fn range_on_line_with_length(line: u32, length: u32) -> Range {
-    Range {
-        start: Position { line, character: 0 },
-        end: Position {
-            line,
-            character: length,
-        },
-    }
-}
-/// Util function to create a new range on given line indexes from start of first line to to given length in last line
-fn range_on_lines(line: u32, line2: u32, length: u32) -> Range {
-    Range {
-        start: Position { line, character: 0 },
-        end: Position {
-            line: line2,
-            character: length,
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -319,13 +299,13 @@ mod tests {
         TESTING_EXOS_SPEC, TESTING_SKILLS_SPEC, TYPE_SPEC,
     };
     use crate::error::{ParseError, ParseErrorType};
-    use crate::semantic::{range_on_line_with_length, range_on_lines};
     use crate::{
         common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC},
         parser::tokenize_into_lines,
-        semantic::{build_blocks_tree, Block},
+        semantic::{Block, build_blocks_tree},
         spec::ValidDYSpec,
     };
+    use crate::{range_on_line_with_length, range_on_lines};
     use pretty_assertions::assert_eq;
 
     fn get_blocks<'a>(
