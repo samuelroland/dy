@@ -45,7 +45,7 @@ pub const COURSES_SPEC: &DYSpec = &[COURSE_SPEC];
 
 impl<'a> FromDYBlock<'a> for DYCourse {
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYCourse) {
-        let mut errors = Vec::new();
+        let errors = Vec::new();
         let mut course = DYCourse {
             name: block.get_joined_text(),
             ..Default::default()
@@ -64,9 +64,10 @@ impl<'a> FromDYBlock<'a> for DYCourse {
     }
 }
 
-pub fn parse_course(content: &str) -> ParseResult<DYCourse> {
+pub fn parse_course(some_file: &Option<String>, content: &str) -> ParseResult<DYCourse> {
     parse_with_spec::<DYCourse>(
         &ValidDYSpec::new(COURSES_SPEC).expect("TESTING_COURSE_SPEC is invalid !"),
+        some_file,
         content,
     )
 }
@@ -84,8 +85,9 @@ mod tests {
         let text = "course Programmation 1
 code PRG1
 goal Apprendre des bases solides du C++";
+        let some_file_path = Some("course.dy".to_string());
         assert_eq!(
-            parse_course(text),
+            parse_course(&some_file_path, text),
             ParseResult {
                 items: vec![DYCourse {
                     name: "Programmation 1".to_string(),
@@ -93,7 +95,9 @@ goal Apprendre des bases solides du C++";
                     code: "PRG1".to_string(),
                     goal: "Apprendre des bases solides du C++".to_string()
                 }],
-                errors: vec![]
+                errors: vec![],
+                some_file_path,
+                some_file_content: None // on errors
             }
         )
     }

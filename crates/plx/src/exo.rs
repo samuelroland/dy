@@ -177,9 +177,10 @@ fn split_args_string(line: &str) -> Vec<String> {
     }
 }
 
-pub fn parse_exos(content: &str) -> ParseResult<DYExo> {
+pub fn parse_exos(some_file: &Option<String>, content: &str) -> ParseResult<DYExo> {
     parse_with_spec(
         &ValidDYSpec::new(EXOS_SPEC).expect("EXOS_SPEC is invalid !"),
+        some_file,
         content,
     )
 }
@@ -222,9 +223,12 @@ type John23
 see This doesn't look like a firstname...
 exit 2
 ";
+        let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(text),
+            parse_exos(some_file, text),
             ParseResult {
+                some_file_path: some_file.clone(),
+                some_file_content: None,
                 items: vec![DYExo {
                     name: "Just greet me".to_string(),
                     instruction: "A simple hello program that **asks your firstname and lastname and greets you**.\nMake sure to validate firstname and lastname content. They must contain only A-Z and a-z chars. \nDo not use a regex. Try to avoid repeating the validation logic.\n\nThe goal is to train input/output with `printf` and `scanf`.".to_string(),
@@ -265,9 +269,12 @@ check test
 see hello
 exit blabla
 ";
+        let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(text),
+            parse_exos(some_file, text),
             ParseResult {
+                some_file_path: some_file.clone(),
+                some_file_content: Some(text.to_string()),
                 items: vec![DYExo {
                     name: "test".to_string(),
                     instruction: "".to_string(),
@@ -296,9 +303,12 @@ check test
 args 1 2 3 hey there
 see hello
 ";
+        let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(text),
+            parse_exos(some_file, text),
             ParseResult {
+                some_file_path: some_file.clone(),
+                some_file_content: None,
                 items: vec![DYExo {
                     name: "test".to_string(),
                     instruction: "".to_string(),
@@ -330,9 +340,12 @@ args
 // that's okay
 type
 ";
+        let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(text),
+            parse_exos(some_file, text),
             ParseResult {
+                some_file_path: some_file.clone(),
+                some_file_content: Some(text.to_string()),
                 items: vec![DYExo {
                     name: "test".to_string(),
                     instruction: "".to_string(),

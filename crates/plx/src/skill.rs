@@ -78,9 +78,10 @@ impl<'a> FromDYBlock<'a> for DYSkill {
     }
 }
 
-pub fn parse_skills(content: &str) -> ParseResult<DYSkill> {
+pub fn parse_skills(some_file: &Option<String>, content: &str) -> ParseResult<DYSkill> {
     parse_with_spec(
         &ValidDYSpec::new(SKILLS_SPEC).expect("TESTING_SKILLS_SPEC is invalid !"),
+        some_file,
         content,
     )
 }
@@ -119,9 +120,12 @@ subskill Manipulation de bits
 subskill Redéfinition d'opérateurs
 
 ";
+        let some_file = &Some("skills.dy".to_string());
         assert_eq!(
-            parse_skills(text),
+            parse_skills(some_file, text),
             ParseResult {
+                some_file_path: some_file.clone(),
+                some_file_content: None,
         items: vec![
             DYSkill {
                 name: "Classes".to_string(),
@@ -181,9 +185,12 @@ subskill
 
 
 ";
+        let some_file = &Some("skills.dy".to_string());
         assert_eq!(
-            parse_skills(text),
+            parse_skills(some_file, text),
             ParseResult {
+                some_file_path: some_file.clone(),
+                some_file_content: Some(text.to_string()),
                 items: vec![DYSkill {
                     name: "A".to_string(),
                     directory: "a".to_string(),

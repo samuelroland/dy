@@ -19,6 +19,10 @@ pub const FILE_EXTENSION: &str = "dy";
 pub struct ParseResult<T> {
     pub items: Vec<T>,
     pub errors: Vec<ParseError>,
+    /// If provided during parse_with_spec, the file path will be provided, for better error display
+    pub some_file_path: Option<String>,
+    /// If the `errors` vec is not empty, it will also includes the file content so the error can be displayed
+    pub some_file_content: Option<String>,
 }
 
 /// Make sure we can create this type from a Block and validate it's content once created
@@ -29,7 +33,12 @@ pub trait FromDYBlock<'a> {
 /// Given a ValidDYSpec and a content, generate a ParseResult with all the items of type T that
 /// have been extracted. This T needs to implement the mapping from a given Block and validation
 /// after the mapping, via the FromDYBlock trait.
-pub fn parse_with_spec<'a, T>(spec: &'a ValidDYSpec, content: &'a str) -> ParseResult<T>
+/// The ParseResult.some_file_content is filled with an owned copy of the content only if they are some errors
+pub fn parse_with_spec<'a, T>(
+    spec: &'a ValidDYSpec,
+    some_file: &Option<String>,
+    content: &'a str,
+) -> ParseResult<T>
 where
     T: FromDYBlock<'a>,
 {
@@ -44,7 +53,18 @@ where
         items.push(entity);
     }
 
-    ParseResult { items, errors }
+    let some_file_content = if errors.is_empty() {
+        None
+    } else {
+        Some(content.to_string())
+    };
+
+    ParseResult {
+        items,
+        some_file_path: some_file.clone(),
+        errors,
+        some_file_content,
+    }
 }
 
 // Helpers functions
