@@ -1,8 +1,3 @@
-use std::{
-    ffi::{OsStr, OsString},
-    path::PathBuf,
-};
-
 pub mod course;
 pub mod exo;
 pub mod skill;

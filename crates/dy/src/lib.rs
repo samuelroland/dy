@@ -77,6 +77,7 @@ impl<T> Display for ParseResult<T> {
                         .join("\n"),
                     None => String::default(),
                 };
+                // Note: this format is necessary, clippy is wrong
                 let _ = writeln!(f, "{}", format!("{context_line}").blue());
                 let underlined_chars_count = range.end.character - range.start.character;
                 let shifter = range.start.character;
@@ -85,13 +86,13 @@ impl<T> Display for ParseResult<T> {
                 } else {
                     &"^".repeat(underlined_chars_count as usize)
                 };
-                write!(
+                let _ = write!(
                     f,
                     "{}{}",
                     " ".repeat(shifter as usize),
                     repeated_markers.red()
                 );
-                writeln!(f, "{}", format!(" {}", error.error).red().bold());
+                let _ = writeln!(f, "{}", format!(" {}", error.error).red().bold());
             }
             Ok(())
         }
