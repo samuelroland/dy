@@ -64,7 +64,6 @@ impl<'a> FromDYBlock<'a> for DYSkill {
                             SUBSKILL_SPEC.id.len() as u32,
                             SUBSKILL_SPEC.id.len() as u32,
                         ),
-                        some_file: None,
                         error: ParseErrorType::MissingRequiredValue(SUBSKILL_SPEC.id.to_string()),
                     });
                 }
@@ -204,7 +203,6 @@ subskill
                 }],
                 errors: vec![ParseError {
                     range: range_on_line_part(3, 8, 8),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredValue("subskill".to_string()),
                 }]
             }

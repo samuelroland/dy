@@ -47,7 +47,6 @@ impl PartialOrd for ParseError {
 #[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
 pub struct ParseError {
     pub range: Range,
-    pub some_file: Option<String>,
     pub error: ParseErrorType,
 }
 

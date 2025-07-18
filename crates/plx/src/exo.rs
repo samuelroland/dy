@@ -117,7 +117,6 @@ impl<'a> FromDYBlock<'a> for DYExo {
                                     ARGS_SPEC.id.len() as u32,
                                     ARGS_SPEC.id.len() as u32,
                                 ),
-                                some_file: None,
                                 error: ParseErrorType::MissingRequiredValue(
                                     check_subblock_id.to_string(),
                                 ),
@@ -139,7 +138,6 @@ impl<'a> FromDYBlock<'a> for DYExo {
                                             + 1,
                                         check_subblock.range.end.character,
                                     ),
-                                    some_file: None,
                                     error: ParseErrorType::ValidationError(
                                         ERROR_CANNOT_PARSE_EXIT_CODE.to_string(),
                                     ),
@@ -287,7 +285,6 @@ exit blabla
                 }],
                 errors: vec![ParseError {
                     range: range_on_line_part(3, 5, 11),
-                    some_file: None,
                     error: ParseErrorType::ValidationError(
                         ERROR_CANNOT_PARSE_EXIT_CODE.to_string()
                     )
@@ -361,7 +358,6 @@ type
                 }],
                 errors: vec![ParseError {
                     range: range_on_line_part(4, 4, 4),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredValue("args".to_string()),
                 }]
             }

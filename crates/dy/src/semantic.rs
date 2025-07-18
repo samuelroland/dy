@@ -163,7 +163,6 @@ fn check_required_constraint(
                         block.key.id.len() as u32,
                         block.key.id.len() as u32,
                     ),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredValue(block.key.id.to_string()),
                 });
             }
@@ -186,7 +185,6 @@ fn check_required_constraint(
         };
         errors.push(ParseError {
             range: range_on_line_with_length(parent_line_index, 0),
-            some_file: None,
             error: ParseErrorType::MissingRequiredKey(missing_key.to_string()),
         });
     }
@@ -239,7 +237,6 @@ fn build_blocks_subtree_recursive<'a>(
                             line.index as u32,
                             associated_spec.id.len() as u32,
                         ),
-                        some_file: None,
                         error: ParseErrorType::WrongKeyPosition(
                             associated_spec.id.to_string(),
                             "??".to_string(), // how to get the parent ??
@@ -262,7 +259,6 @@ fn build_blocks_subtree_recursive<'a>(
                                     line.index as u32,
                                     line.slice.len() as u32,
                                 ),
-                                some_file: None,
                                 error: ParseErrorType::InvalidMultilineContent(
                                     existing_block.key.id.to_string(),
                                 ),
@@ -278,7 +274,6 @@ fn build_blocks_subtree_recursive<'a>(
                             line.index as u32,
                             line.slice.len() as u32,
                         ),
-                        some_file: None,
                         error: ParseErrorType::ContentOutOfKey,
                     });
                 }
@@ -322,7 +317,6 @@ fn build_blocks_subtree_recursive<'a>(
                     blocks_starting_line_indexes[idx] as u32,
                     block.key.id.len() as u32,
                 ),
-                some_file: None,
                 error: ParseErrorType::DuplicatedKey(block.key.id.to_string(), level),
             });
         } else {
@@ -452,12 +446,10 @@ code hey";
             vec![
                 ParseError {
                     range: range_on_line_with_length(0, 4),
-                    some_file: None,
                     error: ParseErrorType::WrongKeyPosition("goal".to_string(), "??".to_string()) // "course".to_string())
                 },
                 ParseError {
                     range: range_on_line_with_length(1, 0),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredKey("goal".to_string())
                 }
             ]
@@ -499,7 +491,6 @@ course oups";
             errors,
             vec![ParseError {
                 range: range_on_line_with_length(3, 6),
-                some_file: None,
                 error: ParseErrorType::DuplicatedKey("course".to_string(), 0)
             }]
         );
@@ -575,7 +566,6 @@ goal Apprendre des bases solides du C++";
             errors,
             vec![ParseError {
                 range: range_on_line_with_length(1, 27),
-                some_file: None,
                 error: ParseErrorType::InvalidMultilineContent("course".to_string())
             }]
         );
@@ -618,7 +608,6 @@ goal Apprendre des bases solides du C++";
             errors,
             vec![ParseError {
                 range: range_on_line_with_length(1, 19),
-                some_file: None,
                 error: ParseErrorType::ContentOutOfKey
             }]
         );
@@ -679,17 +668,14 @@ check error with duplicate
             vec![
                 ParseError {
                     range: range_on_line_with_length(14, 4),
-                    some_file: None,
                     error: ParseErrorType::DuplicatedKey("args".to_string(), 2),
                 },
                 ParseError {
                     range: range_on_line_with_length(17, 4),
-                    some_file: None,
                     error: ParseErrorType::DuplicatedKey("exit".to_string(), 2),
                 },
                 ParseError {
                     range: range_on_line_with_length(20, 3),
-                    some_file: None,
                     error: ParseErrorType::DuplicatedKey("exo".to_string(), 0),
                 },
             ]
@@ -793,22 +779,18 @@ check 2
             vec![
                 ParseError {
                     range: range_on_line_with_length(0, 11),
-                    some_file: None,
                     error: ParseErrorType::ContentOutOfKey
                 },
                 ParseError {
                     range: range_on_line_with_length(4, 3),
-                    some_file: None,
                     error: ParseErrorType::WrongKeyPosition("see".to_string(), "??".to_string()),
                 },
                 ParseError {
                     range: range_on_line_with_length(8, 4),
-                    some_file: None,
                     error: ParseErrorType::DuplicatedKey("args".to_string(), 2),
                 },
                 ParseError {
                     range: range_on_line_with_length(10, 0),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredKey("see".to_string()),
                 },
             ]
@@ -902,17 +884,14 @@ goal";
             vec![
                 ParseError {
                     range: range_on_line_with_length(0, 0),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredKey("code".to_string())
                 },
                 ParseError {
                     range: range_on_line_part(0, 6, 6),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredValue("course".to_string())
                 },
                 ParseError {
                     range: range_on_line_part(2, 4, 4),
-                    some_file: None,
                     error: ParseErrorType::MissingRequiredValue("goal".to_string())
                 }
             ]
@@ -942,7 +921,6 @@ goal";
             errors,
             vec![ParseError {
                 range: range_on_line_with_length(0, 0),
-                some_file: None,
                 error: ParseErrorType::MissingRequiredKey("course".to_string())
             },]
         );
