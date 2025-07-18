@@ -9,7 +9,7 @@ pub enum ParseErrorType {
     // Blocks tree building errors
     #[error("The '{0}' key can be only used under a `{1}`")]
     WrongKeyPosition(String, String),
-    #[error("The '{0}' key can only be used once {level}", level = if *.1 == 0 {"in document root"} else {"at this level"})]
+    #[error("The '{0}' key can only be used once {level}", level = if *.1 == 0 {"in the document root"} else {"at this level"})]
     DuplicatedKey(String, u8),
     #[error("Invalid multiline content found after the '{0}' key which is single line")]
     InvalidMultilineContent(String),

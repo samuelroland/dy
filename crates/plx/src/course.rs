@@ -74,6 +74,8 @@ pub fn parse_course(some_file: &Option<String>, content: &str) -> ParseResult<DY
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::format;
+
     use dy::ParseResult;
 
     use pretty_assertions::assert_eq;
@@ -100,5 +102,71 @@ goal Apprendre des bases solides du C++";
                 some_file_content: None // on errors
             }
         )
+    }
+
+    #[test]
+    fn test_parse_result_display_is_correct() {
+        let text = "code YEP
+course PRG1
+goal Learn C++
+course PRG2
+goal hey";
+        let expected_output = "Found 1 item in course.dy with 3 errors.
+
+Error at course.dy:0:0
+code YEP
+^^^^ The 'code' key can be only used under a `??`
+
+Error at course.dy:1:0
+course PRG1
+| Missing required key 'code'
+
+Error at course.dy:3:0
+course PRG2
+^^^^^^ The 'course' key can only be used once in the document root
+";
+
+        let parse_result = parse_course(&Some("course.dy".to_string()), text);
+        eprintln!("{parse_result}");
+        assert_eq!(format!("{parse_result}"), expected_output);
+    }
+
+    #[test]
+    fn test_parse_result_display_is_also_correct() {
+        let text = "course
+code PRG1
+goal Learn C++
+";
+        let expected_output = "Found 1 item in course.dy with 1 error.
+
+Error at course.dy:0:6
+course
+      | Missing a value for the required key 'course'
+";
+        // Hint: a course.dy file can only define a single course";
+
+        let parse_result = parse_course(&Some("course.dy".to_string()), text);
+        eprintln!("{parse_result}");
+        assert_eq!(format!("{parse_result}"), expected_output);
+    }
+
+    #[test]
+    fn test_parse_result_display_can_highlight_unknown_content() {
+        let text = "// just a comment
+what's this file ??
+i don't know...
+
+course Programmation 1
+code PRG1
+oupsii
+goal hey";
+        let expected_output = "
+
+";
+        // Hint: a course.dy file can only define a single course";
+
+        let parse_result = parse_course(&Some("course.dy".to_string()), text);
+        eprintln!("{parse_result}");
+        assert_eq!(format!("{parse_result}"), expected_output);
     }
 }

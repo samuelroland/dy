@@ -1,7 +1,11 @@
+use std::fmt::Display;
+
+use colored::Colorize;
 use error::ParseError;
 use lsp_types::{Position, Range};
 use parser::tokenize_into_lines;
 use semantic::{Block, build_blocks_tree};
+use serde::Serialize;
 use spec::ValidDYSpec;
 
 pub mod error;
@@ -15,7 +19,7 @@ mod common;
 pub const FILE_EXTENSION: &str = "dy";
 
 /// The result of a parsing, with the vector of items and potentially some errors
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct ParseResult<T> {
     pub items: Vec<T>,
     pub errors: Vec<ParseError>,
@@ -23,6 +27,75 @@ pub struct ParseResult<T> {
     pub some_file_path: Option<String>,
     /// If the `errors` vec is not empty, it will also includes the file content so the error can be displayed
     pub some_file_content: Option<String>,
+}
+
+impl<T> Display for ParseResult<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.errors.is_empty() {
+            write!(
+                f,
+                "{}",
+                format!(
+                    "Found {} items {}with no error!",
+                    self.items.len(),
+                    self.some_file_path
+                        .as_ref()
+                        .map(|path| format!("in {path} "))
+                        .unwrap_or_default()
+                )
+                .green()
+            )
+        } else {
+            let _ = write!(
+                f,
+                "{}",
+                format!(
+                    "Found {} item{} {}with {} error{}.\n",
+                    self.items.len(),
+                    if self.items.len() > 1 { "s" } else { "" },
+                    self.some_file_path
+                        .as_ref()
+                        .map(|path| format!("in {path} "))
+                        .unwrap_or_default(),
+                    self.errors.len(),
+                    if self.errors.len() > 1 { "s" } else { "" },
+                )
+                .red()
+            );
+
+            for error in self.errors.iter() {
+                let range = error.range;
+                let position = match &self.some_file_path {
+                    Some(file) => format!("{file}:{}:{}", range.start.line, range.start.character),
+                    None => format!("line {}, char {}", range.start.line, range.start.character),
+                };
+                let _ = write!(f, "{}", format!("\nError at {position}\n").cyan());
+
+                let context_line = match &self.some_file_content {
+                    Some(content) => content.lines().collect::<Vec<_>>()
+                        [error.range.start.line as usize..range.end.line as usize + 1]
+                        .join("\n"),
+                    None => String::default(),
+                };
+                let _ = writeln!(f, "{}", format!("{context_line}").blue());
+                let underlined_chars_count = range.end.character - range.start.character;
+                let shifter = range.start.character;
+                let repeated_markers = if underlined_chars_count == 0 {
+                    "|"
+                } else {
+                    &"^".repeat(underlined_chars_count as usize)
+                };
+                write!(
+                    f,
+                    "{}{}",
+                    " ".repeat(shifter as usize),
+                    repeated_markers.red()
+                );
+                writeln!(f, "{}", format!(" {}", error.error).red().bold());
+            }
+            Ok(())
+        }
+    }
 }
 
 /// Make sure we can create this type from a Block and validate it's content once created
