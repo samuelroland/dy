@@ -1,11 +1,10 @@
-use std::fmt::Display;
-
 use lsp_types::Range;
 use serde::{Deserialize, Serialize};
+use serde_with::SerializeDisplay;
 
 use crate::parser::COMMENT_PREFIX;
 
-#[derive(Serialize, Deserialize, Debug, thiserror::Error, Clone, Eq, PartialEq)]
+#[derive(Deserialize, Debug, thiserror::Error, Clone, Eq, PartialEq, SerializeDisplay)]
 pub enum ParseErrorType {
     // Blocks tree building errors
     #[error("The '{0}' key can be only used under a `{1}`")]
@@ -44,29 +43,9 @@ impl PartialOrd for ParseError {
     }
 }
 
-#[derive(Debug, thiserror::Error, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[typeshare::typeshare]
 pub struct ParseError {
     pub range: Range,
     pub error: ParseErrorType,
-}
-
-// TODO: improve this console display structure ? add colors ? add context of the line and add `^^^^^`
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Error at {}: {}",
-            match &self.some_file {
-                Some(file) => format!(
-                    "{file}:{}:{}",
-                    self.range.start.line, self.range.start.character
-                ),
-                None => format!(
-                    "At line {}, char {}",
-                    self.range.start.line, self.range.start.character
-                ),
-            },
-            self.error
-        )
-    }
 }
