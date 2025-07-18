@@ -10,7 +10,6 @@ use dy::{
 #[derive(Default, Debug, PartialEq)]
 pub struct DYCourse {
     pub name: String,
-    pub instruction: String,
     pub code: String,
     pub goal: String,
 }
@@ -50,7 +49,6 @@ impl<'a> FromDYBlock<'a> for DYCourse {
             name: block.get_joined_text(),
             ..Default::default()
         };
-        // The first line is the name, the following ones are the instruction
         for subblock in block.subblocks.iter() {
             let id = subblock.key.id;
             if id == CODE_SPEC.id {
@@ -93,7 +91,6 @@ goal Apprendre des bases solides du C++";
             ParseResult {
                 items: vec![DYCourse {
                     name: "Programmation 1".to_string(),
-                    instruction: "".to_string(),
                     code: "PRG1".to_string(),
                     goal: "Apprendre des bases solides du C++".to_string()
                 }],
