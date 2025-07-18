@@ -5,8 +5,9 @@ use dy::{
     semantic::Block,
     spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
+use serde::Serialize;
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Serialize, Default, Debug, PartialEq)]
 pub struct DYSkill {
     pub name: String,
     pub description: String,

@@ -357,6 +357,7 @@ dependencies = [
  "dy",
  "ntest",
  "pretty_assertions",
+ "serde",
 ]
 
 [[package]]

@@ -6,8 +6,9 @@ use dy::{
     semantic::Block,
     spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
+use serde::Serialize;
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Serialize, Default, Debug, PartialEq)]
 pub struct DYCourse {
     pub name: String,
     pub code: String,
@@ -72,8 +73,6 @@ pub fn parse_course(some_file: &Option<String>, content: &str) -> ParseResult<DY
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::format;
-
     use dy::ParseResult;
 
     use pretty_assertions::assert_eq;

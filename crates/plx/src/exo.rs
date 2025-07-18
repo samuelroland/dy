@@ -5,9 +5,10 @@ use dy::{
     semantic::Block,
     spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
+use serde::Serialize;
 
 /// This describes the automation of an action that would normally be done manually in the terminal
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum TermAction {
     /// Make sure there is the given string in the program stdout. It doesn't need to be exact.
     /// This string is trimed itself to avoid any missing invisible space causing check failure
@@ -17,7 +18,7 @@ pub enum TermAction {
     Type(String),
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Serialize, Default, Debug, PartialEq)]
 pub struct Check {
     pub name: String,
     /// The argument to pass to exo program when executing it
@@ -28,7 +29,7 @@ pub struct Check {
     pub sequence: Vec<TermAction>,
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Serialize, Default, Debug, PartialEq)]
 pub struct DYExo {
     pub name: String,
     pub instruction: String,

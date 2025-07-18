@@ -11,6 +11,7 @@ name = "plx_dy"
 
 [dependencies]
 dy = { path = "../dy/" }
+serde = "1.0.219"
 
 [dev-dependencies]
 ntest = "0.9.3"
