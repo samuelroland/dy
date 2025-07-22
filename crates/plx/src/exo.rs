@@ -177,7 +177,7 @@ fn split_args_string(line: &str) -> Vec<String> {
 
 pub fn parse_exos(some_file: &Option<String>, content: &str) -> ParseResult<DYExo> {
     parse_with_spec(
-        &ValidDYSpec::new(EXO_SPEC).expect("EXOS_SPEC is invalid !"),
+        &ValidDYSpec::new(EXO_SPEC).expect("EXO_SPEC is invalid !"),
         some_file,
         content,
     )

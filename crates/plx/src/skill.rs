@@ -82,7 +82,7 @@ impl<'a> FromDYBlock<'a> for DYSkill {
 
 pub fn parse_skills(some_file: &Option<String>, content: &str) -> ParseResult<DYSkill> {
     parse_with_spec(
-        &ValidDYSpec::new(SKILLS_SPEC).expect("TESTING_SKILLS_SPEC is invalid !"),
+        &ValidDYSpec::new(SKILLS_SPEC).expect("SKILLS_SPEC is invalid !"),
         some_file,
         content,
     )

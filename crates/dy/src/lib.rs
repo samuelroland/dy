@@ -100,6 +100,8 @@ impl<T> Display for ParseResult<T> {
 
 /// Make sure we can create this type from a Block and validate it's content once created
 pub trait FromDYBlock<'a> {
+    /// Get a block representing the same object as Self but in a blocks tree
+    /// Subblocks must be taken into account, there is call of this method for them
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, Self);
 }
 
@@ -120,6 +122,9 @@ where
 
     let mut items: Vec<T> = Vec::with_capacity(blocks.len());
 
+    // Note: we only call from_block_with_validation() on the block at level 0
+    // because they are the only one we know they implement this method, due to the T: FromDYBlock
+    // Subblocks are managed by this method
     for block in blocks {
         let (new_errors, entity) = T::from_block_with_validation(&block);
         errors.extend(new_errors);

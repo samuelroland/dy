@@ -63,7 +63,7 @@ impl<'a> FromDYBlock<'a> for DYCourse {
 
 pub fn parse_course(some_file: &Option<String>, content: &str) -> ParseResult<DYCourse> {
     parse_with_spec::<DYCourse>(
-        &ValidDYSpec::new(COURSE_SPEC).expect("TESTING_COURSE_SPEC is invalid !"),
+        &ValidDYSpec::new(COURSE_SPEC).expect("COURSE_SPEC is invalid !"),
         some_file,
         content,
     )
