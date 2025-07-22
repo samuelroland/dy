@@ -91,7 +91,8 @@ pub const EXO_SPEC: &KeySpec = &KeySpec {
 pub const EXOS_SPEC: &DYSpec = &[EXO_SPEC];
 
 // Error texts
-const ERROR_CANNOT_PARSE_EXIT_CODE: &str = "Couldn't parse the given value as the program's exit code, which is an unsigned 32 bits integer.";
+const ERROR_CANNOT_PARSE_EXIT_CODE: &str =
+    "Couldn't parse the given value as the program's exit code (signed 32bits integer)";
 
 impl<'a> FromDYBlock<'a> for DYExo {
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYExo) {

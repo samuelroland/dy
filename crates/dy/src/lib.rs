@@ -69,7 +69,7 @@ impl<T> Display for ParseResult<T> {
                     Some(file) => format!("{file}:{}:{}", range.start.line, range.start.character),
                     None => format!("line {}, char {}", range.start.line, range.start.character),
                 };
-                let _ = write!(f, "{}", format!("\nError at {position}\n").cyan());
+                let _ = write!(f, "{}", format!("\nError at {position}\n").cyan().bold());
 
                 let context_line = match &self.some_file_content {
                     Some(content) => content.lines().collect::<Vec<_>>()
@@ -77,8 +77,7 @@ impl<T> Display for ParseResult<T> {
                         .join("\n"),
                     None => String::default(),
                 };
-                // Note: this format is necessary, clippy is wrong
-                let _ = writeln!(f, "{}", format!("{context_line}").blue());
+                let _ = writeln!(f, "{context_line}");
                 let underlined_chars_count = range.end.character - range.start.character;
                 let shifter = range.start.character;
                 let repeated_markers = if underlined_chars_count == 0 {

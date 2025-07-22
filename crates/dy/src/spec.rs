@@ -1,8 +1,10 @@
 /// Core types to define a DY specification, that is the description of the structure of a file to parse
 use std::{collections::HashSet, fmt::Debug};
 
+use serde::Serialize;
+
 /// The specification of a key
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Serialize, Hash, Eq, PartialEq)]
 pub struct KeySpec<'a> {
     /// The id of the key, its string representation, like "exo", "course", "code", ...
     pub id: &'a str,
@@ -40,7 +42,7 @@ impl<'a> KeySpec<'a> {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Debug, Hash, Eq, PartialEq)]
 pub enum ValueType {
     SingleLine,
     Multiline,
