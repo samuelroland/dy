@@ -2,8 +2,7 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 use std::iter::Peekable;
 
-/// The semantic analyzer is responsible for building tree of blocks, building and verifying the hierarchy as the lines
-/// starting with a key are found.
+/// The semantic analyzer is responsible for building tree of blocks, building and verifying the hierarchy as the tree is built and at the end
 use lsp_types::{Position, Range};
 
 use crate::range_on_line_part;

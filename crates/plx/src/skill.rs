@@ -16,7 +16,7 @@ pub struct DYSkill {
     /// Note: subskills are not supported by PLX at the moment, they are just ignored
     pub subskills: Vec<DYSkill>,
 }
-pub const DIR_SPEC: &KeySpec = &KeySpec {
+const DIR_KEYSPEC: &KeySpec = &KeySpec {
     id: "dir",
     desc: "The directory where exos of this skill are stored. This directory must be unique among listed skills.",
     subkeys: &[],
@@ -26,7 +26,7 @@ pub const DIR_SPEC: &KeySpec = &KeySpec {
 };
 // TODO: how to support dir also for subskill ? this is detected as a duplicated keyspec !
 // For now, PLX doesn't support subskills so we will just ignore them when converting DYSkill to Skill
-pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
+const SUBSKILL_KEYSPEC: &KeySpec = &KeySpec {
     id: "subskill",
     desc: "The subskill is the same as a skill but must be more specific and focused.",
     subkeys: &[],
@@ -34,15 +34,15 @@ pub const SUBSKILL_SPEC: &KeySpec = &KeySpec {
     once: false,
     required: false,
 };
-pub const SKILL_SPEC: &KeySpec = &KeySpec {
+const SKILL_KEYSPEC: &KeySpec = &KeySpec {
     id: "skill",
     desc: "The skill is describing what students are expected to be able to do. Subskills can be used to define more specific inner skills.\nThe first line is the skill name and following lines define the details of the skill.",
-    subkeys: &[SUBSKILL_SPEC, DIR_SPEC],
+    subkeys: &[SUBSKILL_KEYSPEC, DIR_KEYSPEC],
     vt: ValueType::Multiline,
     once: false,
     required: true,
 };
-pub const SKILLS_SPEC: &DYSpec = &[SKILL_SPEC];
+pub const SKILLS_SPEC: &DYSpec = &[SKILL_KEYSPEC];
 
 impl<'a> FromDYBlock<'a> for DYSkill {
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYSkill) {
@@ -53,19 +53,21 @@ impl<'a> FromDYBlock<'a> for DYSkill {
 
         for subblock in block.subblocks.iter() {
             let id = subblock.key.id;
-            if id == DIR_SPEC.id {
+            if id == DIR_KEYSPEC.id {
                 skill.directory = subblock.get_joined_text()
             }
-            if id == SUBSKILL_SPEC.id {
+            if id == SUBSKILL_KEYSPEC.id {
                 // Make sure subskill value is not empty
                 if subblock.get_joined_text().is_empty() {
                     errors.push(ParseError {
                         range: range_on_line_part(
                             subblock.range.start.line,
-                            SUBSKILL_SPEC.id.len() as u32,
-                            SUBSKILL_SPEC.id.len() as u32,
+                            SUBSKILL_KEYSPEC.id.len() as u32,
+                            SUBSKILL_KEYSPEC.id.len() as u32,
                         ),
-                        error: ParseErrorType::MissingRequiredValue(SUBSKILL_SPEC.id.to_string()),
+                        error: ParseErrorType::MissingRequiredValue(
+                            SUBSKILL_KEYSPEC.id.to_string(),
+                        ),
                     });
                 }
 

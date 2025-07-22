@@ -15,7 +15,7 @@ pub struct DYCourse {
     pub goal: String,
 }
 
-pub const GOAL_SPEC: &KeySpec = &KeySpec {
+const GOAL_KEYSPEC: &KeySpec = &KeySpec {
     id: "goal",
     desc: "The goal key describes the learning goals of this course.",
     subkeys: &[],
@@ -23,7 +23,7 @@ pub const GOAL_SPEC: &KeySpec = &KeySpec {
     once: true,
     required: true,
 };
-pub const CODE_SPEC: &KeySpec = &KeySpec {
+const CODE_KEYSPEC: &KeySpec = &KeySpec {
     id: "code",
     desc: "The code of the course is a shorter name of the course, under 10 letters usually.",
     subkeys: &[],
@@ -31,17 +31,15 @@ pub const CODE_SPEC: &KeySpec = &KeySpec {
     once: true,
     required: true,
 };
-pub const COURSE_SPEC: &KeySpec = &KeySpec {
+const COURSE_KEYSPEC: &KeySpec = &KeySpec {
     id: "course",
     desc: "A PLX course is grouping skills and exos related to a common set of learning goals.",
-    subkeys: &[CODE_SPEC, GOAL_SPEC],
+    subkeys: &[CODE_KEYSPEC, GOAL_KEYSPEC],
     vt: ValueType::SingleLine,
     once: true,
     required: true,
 };
-// Note: to avoid double definition of COURSE_SPEC we use the plural form
-// even though only one course can be extracted
-pub const COURSES_SPEC: &DYSpec = &[COURSE_SPEC];
+pub const COURSE_SPEC: &DYSpec = &[COURSE_KEYSPEC];
 
 impl<'a> FromDYBlock<'a> for DYCourse {
     fn from_block_with_validation(block: &Block<'a>) -> (Vec<ParseError>, DYCourse) {
@@ -52,10 +50,10 @@ impl<'a> FromDYBlock<'a> for DYCourse {
         };
         for subblock in block.subblocks.iter() {
             let id = subblock.key.id;
-            if id == CODE_SPEC.id {
+            if id == CODE_KEYSPEC.id {
                 course.code = subblock.get_joined_text();
             }
-            if id == GOAL_SPEC.id {
+            if id == GOAL_KEYSPEC.id {
                 course.goal = subblock.text.join("\n");
             }
         }
@@ -65,7 +63,7 @@ impl<'a> FromDYBlock<'a> for DYCourse {
 
 pub fn parse_course(some_file: &Option<String>, content: &str) -> ParseResult<DYCourse> {
     parse_with_spec::<DYCourse>(
-        &ValidDYSpec::new(COURSES_SPEC).expect("TESTING_COURSE_SPEC is invalid !"),
+        &ValidDYSpec::new(COURSE_SPEC).expect("TESTING_COURSE_SPEC is invalid !"),
         some_file,
         content,
     )

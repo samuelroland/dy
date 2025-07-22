@@ -36,7 +36,7 @@ pub struct DYExo {
     pub checks: Vec<Check>,
 }
 
-pub const ARGS_SPEC: &KeySpec = &KeySpec {
+const ARGS_KEYSPEC: &KeySpec = &KeySpec {
     id: "args",
     desc: "The command line arguments passed to the exo program, the space is used to split the list of arguments. No quotes or space inside argument is supported at the moment.",
     // TODO: support a way to have arguments with space !
@@ -45,7 +45,7 @@ pub const ARGS_SPEC: &KeySpec = &KeySpec {
     once: true,
     required: false,
 };
-pub const SEE_SPEC: &KeySpec = &KeySpec {
+const SEE_KEYSPEC: &KeySpec = &KeySpec {
     id: "see",
     desc: "The `see` assertion asserts that the standard output of the exo program contains the given text. Values around that text are permitted.",
     subkeys: &[],
@@ -53,7 +53,7 @@ pub const SEE_SPEC: &KeySpec = &KeySpec {
     once: false,
     required: true,
 };
-pub const TYPE_SPEC: &KeySpec = &KeySpec {
+const TYPE_KEYSPEC: &KeySpec = &KeySpec {
     id: "type",
     desc: "The `type` action simulate typing in the terminal and hitting enter. It inject the given text in the standard input at once after appending a `\\n` at the end of the text.",
     subkeys: &[],
@@ -61,7 +61,7 @@ pub const TYPE_SPEC: &KeySpec = &KeySpec {
     once: false,
     required: false,
 };
-pub const EXIT_SPEC: &KeySpec = &KeySpec {
+const EXIT_KEYSPEC: &KeySpec = &KeySpec {
     desc: "Assert the value of the exit code (also named exit status). By default, this is checked to be 0, you can define another value to assert the program has failed with a specific exit code.",
     id: "exit",
     subkeys: &[],
@@ -69,26 +69,24 @@ pub const EXIT_SPEC: &KeySpec = &KeySpec {
     once: true,
     required: false,
 };
-pub const CHECK_SPEC: &KeySpec = &KeySpec {
+const CHECK_KEYSPEC: &KeySpec = &KeySpec {
     id: "check",
     desc: "Describe a `check`, which is a basic automated test.",
-    subkeys: &[ARGS_SPEC, SEE_SPEC, TYPE_SPEC, EXIT_SPEC],
+    subkeys: &[ARGS_KEYSPEC, SEE_KEYSPEC, TYPE_KEYSPEC, EXIT_KEYSPEC],
     vt: ValueType::SingleLine,
     once: false,
     required: true,
 };
-pub const EXO_SPEC: &KeySpec = &KeySpec {
+const EXO_KEYSPEC: &KeySpec = &KeySpec {
     id: "exo",
     desc: "Define a new exercise (exo is shortcut for exercise) with a name and optionnal instruction.",
-    subkeys: &[CHECK_SPEC],
+    subkeys: &[CHECK_KEYSPEC],
     vt: ValueType::Multiline,
     once: true, // for now, only one exo per file
     required: true,
 };
 
-// Note: to avoid double definition of EXO_SPEC we use the plural form
-// even though only one course can be extracted
-pub const EXOS_SPEC: &DYSpec = &[EXO_SPEC];
+pub const EXO_SPEC: &DYSpec = &[EXO_KEYSPEC];
 
 // Error texts
 const ERROR_CANNOT_PARSE_EXIT_CODE: &str =
@@ -102,22 +100,22 @@ impl<'a> FromDYBlock<'a> for DYExo {
         (exo.name, exo.instruction) = block.get_text_with_joined_splits_at(1);
         for exo_subblock in block.subblocks.iter() {
             let id = exo_subblock.key.id;
-            if id == CHECK_SPEC.id {
+            if id == CHECK_KEYSPEC.id {
                 let mut check = Check {
                     name: exo_subblock.get_joined_text(),
                     ..Default::default()
                 };
                 for check_subblock in exo_subblock.subblocks.iter() {
                     let check_subblock_id = check_subblock.key.id;
-                    if check_subblock_id == ARGS_SPEC.id {
+                    if check_subblock_id == ARGS_KEYSPEC.id {
                         let args_text = &check_subblock.get_joined_text();
                         if args_text.is_empty() {
                             errors.push(ParseError {
                                 // Note: the range is pointing just after the key as it's where the value need to come
                                 range: range_on_line_part(
                                     check_subblock.range.start.line,
-                                    ARGS_SPEC.id.len() as u32,
-                                    ARGS_SPEC.id.len() as u32,
+                                    ARGS_KEYSPEC.id.len() as u32,
+                                    ARGS_KEYSPEC.id.len() as u32,
                                 ),
                                 error: ParseErrorType::MissingRequiredValue(
                                     check_subblock_id.to_string(),
@@ -127,7 +125,7 @@ impl<'a> FromDYBlock<'a> for DYExo {
                             check.args = split_args_string(args_text);
                         }
                     }
-                    if check_subblock_id == EXIT_SPEC.id {
+                    if check_subblock_id == EXIT_KEYSPEC.id {
                         check.exit = None;
                         match check_subblock.get_joined_text().parse::<i32>() {
                             Ok(code) => check.exit = Some(code),
@@ -147,12 +145,12 @@ impl<'a> FromDYBlock<'a> for DYExo {
                             }
                         }
                     }
-                    if check_subblock_id == TYPE_SPEC.id {
+                    if check_subblock_id == TYPE_KEYSPEC.id {
                         check
                             .sequence
                             .push(TermAction::Type(check_subblock.get_joined_text()));
                     }
-                    if check_subblock_id == SEE_SPEC.id {
+                    if check_subblock_id == SEE_KEYSPEC.id {
                         check
                             .sequence
                             .push(TermAction::See(check_subblock.get_joined_text()));
@@ -179,7 +177,7 @@ fn split_args_string(line: &str) -> Vec<String> {
 
 pub fn parse_exos(some_file: &Option<String>, content: &str) -> ParseResult<DYExo> {
     parse_with_spec(
-        &ValidDYSpec::new(EXOS_SPEC).expect("EXOS_SPEC is invalid !"),
+        &ValidDYSpec::new(EXO_SPEC).expect("EXOS_SPEC is invalid !"),
         some_file,
         content,
     )
