@@ -154,8 +154,21 @@ course Programmation 1
 code PRG1
 oupsii
 goal hey";
-        let expected_output = "
+        let expected_output = "Found 1 item in course.dy with 3 errors.
 
+Error at course.dy:1:0
+what's this file ??
+^^^^^^^^^^^^^^^^^^^ This content is not associated to any valid key.
+Hint: maybe this should be a comment starting with // or it needs a valid key as a prefix?
+
+Error at course.dy:2:0
+i don't know...
+^^^^^^^^^^^^^^^ This content is not associated to any valid key.
+Hint: maybe this should be a comment starting with // or it needs a valid key as a prefix?
+
+Error at course.dy:6:0
+oupsii
+^^^^^^ Invalid multiline content found after the 'code' key which is single line
 ";
         // Hint: a course.dy file can only define a single course";
 

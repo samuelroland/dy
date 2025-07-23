@@ -262,7 +262,7 @@ exit 2
 
     #[test]
     fn test_can_error_on_invalid_exit_code() {
-        let text = "exo test
+        let text = "exo thing
 check test
 see hello
 exit blabla
@@ -274,14 +274,14 @@ exit blabla
                 some_file_path: some_file.clone(),
                 some_file_content: Some(text.to_string()),
                 items: vec![DYExo {
-                    name: "test".to_string(),
+                    name: "thing".to_string(),
                     instruction: "".to_string(),
                     checks: vec![Check {
                         name: "test".to_string(),
                         args: vec![],
                         exit: None,
-                        sequence: vec![TermAction::See("hello".to_string(),),],
-                    },],
+                        sequence: vec![TermAction::See("hello".to_string())],
+                    }]
                 }],
                 errors: vec![ParseError {
                     range: range_on_line_part(3, 5, 11),
