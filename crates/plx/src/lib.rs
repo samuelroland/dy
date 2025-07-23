@@ -2,6 +2,8 @@ pub mod course;
 pub mod exo;
 pub mod skill;
 
+pub use dy;
+
 pub use course::parse_course;
 pub use exo::parse_exos;
 pub use skill::parse_skills;
