@@ -19,5 +19,7 @@ serde_with = "3.14.0"
 colored = "3.0.0"
 
 [dev-dependencies]
+# Note: the no-color feature disable the ANSI colors, only for testing, because that's annoying to have unit tests with ANSI codes in expected strings
+colored = { version = "3.0.0", features = ["no-color"] }
 ntest = "0.9.3"
 pretty_assertions = "1.4.1"
