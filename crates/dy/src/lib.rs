@@ -137,6 +137,10 @@ where
         Some(content.to_string())
     };
 
+    // We have to sort the errors to make them appear in the same order as their position in the document
+    // defined by the first char of the range. This is required because the generation order might be different.
+    errors.sort();
+
     ParseResult {
         items,
         some_file_path: some_file.clone(),

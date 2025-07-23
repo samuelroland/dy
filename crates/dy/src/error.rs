@@ -4,7 +4,9 @@ use serde_with::SerializeDisplay;
 
 use crate::lexer::COMMENT_PREFIX;
 
-#[derive(Deserialize, Debug, thiserror::Error, Clone, Eq, PartialEq, SerializeDisplay)]
+#[derive(
+    Deserialize, Debug, thiserror::Error, Clone, Eq, PartialEq, PartialOrd, Ord, SerializeDisplay,
+)]
 pub enum ParseErrorType {
     // Blocks tree building errors
     #[error("The '{0}' key can be only used under a `{1}`")]
@@ -32,8 +34,16 @@ pub enum ParseErrorType {
 /// This makes it easier for testing and also better for console output
 impl Ord for ParseError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.range.start.line, self.range.start.character)
-            .cmp(&(other.range.start.line, other.range.start.character))
+        (
+            self.range.start.line,
+            self.range.start.character,
+            &self.error, // include the error variant to make sure
+        )
+            .cmp(&(
+                other.range.start.line,
+                other.range.start.character,
+                &other.error,
+            ))
     }
 }
 

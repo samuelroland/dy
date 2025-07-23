@@ -117,7 +117,7 @@ impl<'a> Debug for Block<'a> {
 ///
 /// See result of structure in test_strange_exo_parsing_can_correctly_ignore_error()
 ///
-/// FIXME: there is a very special edge case of error recovering that is not managed. The above
+/// TODO: there is a very special edge case of error recovering that is not managed. The above
 /// example shows that after the WrongKeyPosition of "see" we continue with "exo", but that's only
 /// because that's the root spec, not because that's the right place to start. If had a
 /// WrongKeyPosition at level 2 and it will go up at level 0 to generate the error, a key at level
@@ -127,13 +127,9 @@ pub fn build_blocks_tree<'a>(
     lines: Vec<Line<'a>>,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
     let (blocks, mut errors) =
-        build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0, None);
+        build_blocks_subtree_recursive(&mut lines.iter().peekable(), spec.get(), 0);
 
     check_required_constraint(&blocks, spec.get(), None, &mut errors);
-
-    // TODO: that's useful for future errors generated from entities
-    // is it still useful or are the errors naturally already sorted ?
-    errors.sort();
 
     (blocks, errors)
 }
@@ -194,7 +190,6 @@ fn build_blocks_subtree_recursive<'a>(
     lines: &mut Peekable<std::slice::Iter<'_, Line<'a>>>,
     specs: &DYSpec,
     level: u8,
-    parent_spec: Option<&KeySpec>,
 ) -> (Vec<Block<'a>>, Vec<ParseError>) {
     let mut errors: Vec<ParseError> = Vec::new();
     let mut blocks: Vec<Block> = Vec::new();
@@ -295,7 +290,6 @@ fn build_blocks_subtree_recursive<'a>(
                         lines,
                         existing_block.key.subkeys,
                         level + 1,
-                        Some(existing_block.key),
                     );
                     errors.extend(suberrors);
                     existing_block.subblocks = subblocks;
@@ -881,10 +875,7 @@ goal";
         assert_eq!(
             errors,
             vec![
-                ParseError {
-                    range: range_on_line_with_length(0, 0),
-                    error: ParseErrorType::MissingRequiredKey("code".to_string())
-                },
+                // not this is not sorted... only sorted in parse_with_spec in lib.rs
                 ParseError {
                     range: range_on_line_part(0, 6, 6),
                     error: ParseErrorType::MissingRequiredValue("course".to_string())
@@ -892,7 +883,11 @@ goal";
                 ParseError {
                     range: range_on_line_part(2, 4, 4),
                     error: ParseErrorType::MissingRequiredValue("goal".to_string())
-                }
+                },
+                ParseError {
+                    range: range_on_line_with_length(0, 0),
+                    error: ParseErrorType::MissingRequiredKey("code".to_string())
+                },
             ]
         );
         assert_eq!(
