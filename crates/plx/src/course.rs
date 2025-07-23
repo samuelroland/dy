@@ -3,7 +3,7 @@ use dy::{
     FromDYBlock, ParseResult,
     error::ParseError,
     parse_with_spec,
-    semantic::Block,
+    parser::Block,
     spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
 use serde::Serialize;

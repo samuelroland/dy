@@ -1,8 +1,9 @@
 use dy::{
     FromDYBlock, ParseResult,
     error::{ParseError, ParseErrorType},
-    parse_with_spec, range_on_line_part,
-    semantic::Block,
+    parse_with_spec,
+    parser::Block,
+    range_on_line_part,
     spec::{DYSpec, KeySpec, ValidDYSpec, ValueType},
 };
 use serde::Serialize;

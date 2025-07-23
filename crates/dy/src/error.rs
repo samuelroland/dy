@@ -2,7 +2,7 @@ use lsp_types::Range;
 use serde::{Deserialize, Serialize};
 use serde_with::SerializeDisplay;
 
-use crate::parser::COMMENT_PREFIX;
+use crate::lexer::COMMENT_PREFIX;
 
 #[derive(Deserialize, Debug, thiserror::Error, Clone, Eq, PartialEq, SerializeDisplay)]
 pub enum ParseErrorType {

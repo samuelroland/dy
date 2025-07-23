@@ -2,15 +2,15 @@ use std::fmt::Display;
 
 use colored::Colorize;
 use error::ParseError;
+use lexer::tokenize_into_lines;
 use lsp_types::{Position, Range};
-use parser::tokenize_into_lines;
-use semantic::{Block, build_blocks_tree};
+use parser::{Block, build_blocks_tree};
 use serde::Serialize;
 use spec::ValidDYSpec;
 
 pub mod error;
+pub mod lexer;
 pub mod parser;
-pub mod semantic;
 pub mod spec;
 
 mod common;
