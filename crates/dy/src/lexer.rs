@@ -124,7 +124,7 @@ mod tests {
         common::tests::{
             CODE_SPEC, COURSE_SPEC, EXO_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC, TESTING_EXOS_SPEC,
         },
-        parser::{Line, LinePart, LineType, line_starts_with_key, tokenize_into_lines},
+        lexer::{Line, LinePart, LineType, line_starts_with_key, tokenize_into_lines},
         spec::ValidDYSpec,
     };
     use pretty_assertions::assert_eq;

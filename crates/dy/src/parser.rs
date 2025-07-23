@@ -336,8 +336,8 @@ mod tests {
     use crate::error::{ParseError, ParseErrorType};
     use crate::{
         common::tests::{CODE_SPEC, COURSE_SPEC, GOAL_SPEC, TESTING_COURSE_SPEC},
-        parser::tokenize_into_lines,
-        semantic::{Block, build_blocks_tree},
+        lexer::tokenize_into_lines,
+        parser::{Block, build_blocks_tree},
         spec::ValidDYSpec,
     };
     use crate::{range_on_line_part, range_on_line_with_length, range_on_lines};

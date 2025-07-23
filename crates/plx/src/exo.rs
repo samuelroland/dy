@@ -176,7 +176,7 @@ fn split_args_string(line: &str) -> Vec<String> {
     }
 }
 
-pub fn parse_exos(some_file: &Option<String>, content: &str) -> ParseResult<DYExo> {
+pub fn parse_exo(some_file: &Option<String>, content: &str) -> ParseResult<DYExo> {
     parse_with_spec(
         &ValidDYSpec::new(EXO_SPEC).expect("EXO_SPEC is invalid !"),
         some_file,
@@ -192,7 +192,7 @@ mod tests {
         range_on_line_part,
     };
 
-    use crate::exo::{Check, DYExo, ERROR_CANNOT_PARSE_EXIT_CODE, TermAction, parse_exos};
+    use crate::exo::{Check, DYExo, ERROR_CANNOT_PARSE_EXIT_CODE, TermAction, parse_exo};
 
     use pretty_assertions::assert_eq;
 
@@ -224,7 +224,7 @@ exit 2
 ";
         let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(some_file, text),
+            parse_exo(some_file, text),
             ParseResult {
                 some_file_path: some_file.clone(),
                 some_file_content: None,
@@ -270,7 +270,7 @@ exit blabla
 ";
         let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(some_file, text),
+            parse_exo(some_file, text),
             ParseResult {
                 some_file_path: some_file.clone(),
                 some_file_content: Some(text.to_string()),
@@ -303,7 +303,7 @@ see hello
 ";
         let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(some_file, text),
+            parse_exo(some_file, text),
             ParseResult {
                 some_file_path: some_file.clone(),
                 some_file_content: None,
@@ -340,7 +340,7 @@ type
 ";
         let some_file = &Some("exo.dy".to_string());
         assert_eq!(
-            parse_exos(some_file, text),
+            parse_exo(some_file, text),
             ParseResult {
                 some_file_path: some_file.clone(),
                 some_file_content: Some(text.to_string()),

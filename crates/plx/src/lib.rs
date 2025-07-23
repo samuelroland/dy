@@ -5,7 +5,7 @@ pub mod skill;
 pub use dy;
 
 pub use course::parse_course;
-pub use exo::parse_exos;
+pub use exo::parse_exo;
 pub use skill::parse_skills;
 
 // The PLX spec define that course file can only be described inside a `course.dy` and that skills only inside a `skills.dy`
