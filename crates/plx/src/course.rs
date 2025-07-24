@@ -54,7 +54,7 @@ impl<'a> FromDYBlock<'a> for DYCourse {
                 course.code = subblock.get_joined_text();
             }
             if id == GOAL_KEYSPEC.id {
-                course.goal = subblock.text.join("\n");
+                course.goal = subblock.get_joined_text();
             }
         }
         (errors, course)
